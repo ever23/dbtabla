@@ -1,10 +1,10 @@
-const {model}=require("../../index.js")
+const model=require("sql-model")
 const test2=new model("test2",[
     {
         name:"id_key2",
         type:"int",
         defaultNull:false,
-        prymary:true,
+        primary:true,
     },
     {
         name:"row1",

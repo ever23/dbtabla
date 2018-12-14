@@ -1,5 +1,6 @@
 const assert= require("assert")
-const {connect,model}= require("../index.js")
+const {connect}= require("../index.js")
+const model = require("sql-model")
 const dbTabla= require("../index.js")
 //const dbTabla= require("../lib/dbTabla.js")
 

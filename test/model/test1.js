@@ -1,4 +1,4 @@
-const {model}=require("../../index.js")
+const model=require("sql-model")
 const test1=new model("test1",[
     {
         name:"id",

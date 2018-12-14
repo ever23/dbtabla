@@ -8,13 +8,37 @@ describe("Test de la clase prosessingSql",()=>{
     })
     let config=
     [
-        "unatabla",
+        /*"unatabla",
         {
             OrderColum:["row1","row2","row3","row4"],
             colum:{"row1":{},"row2":{},"row3":{},"row4":{}},
             primary:["row1"],
             autoinrement:"row1",
             
+        },*/
+        {
+            tabla:"unatabla",
+            colums:[
+                {
+                    name:"row1",
+                    type:"int",
+                    prymary:true,
+                    autoinrement:true
+                },
+                {
+                    name:"row2",
+                    type:"text",
+                },
+                {
+                    name:"row3",
+                    type:"text",
+                },
+                {
+                    name:"row4",
+                    type:"text",
+                }
+
+            ]
         },
         {
             escapeChar:"`",
@@ -180,8 +204,8 @@ describe("Test de la clase prosessingSql",()=>{
     it("metodo insert",()=>
     {
         let tabla = new procesingSql(...config)
-        assert.equal(tabla.insert(["a",2,"b",1]),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`,`row4`) VALUES ('a',2,'b',1);")
-        assert.equal(tabla.insert({row1:"a",row2:2,row4:undefined,row3:"b"}),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`,`row4`) VALUES ('a',2,'b',NULL);")
+        assert.equal(tabla.insert(["a",2,"b",1]),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`,`row4`) VALUES ('a',2,'b',1);","arrays")
+        assert.equal(tabla.insert({row1:"a",row2:2,row4:undefined,row3:"b"}),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`,`row4`) VALUES ('a',2,'b',NULL);","object")
 
     })
     it("metodo update",()=>

@@ -5,11 +5,6 @@ Object.defineProperty(dbTabla, "connect", {
     value        : require("./lib/Connect")
 })
 
-Object.defineProperty(dbTabla, "model", {
-    configurable : true,
-    enumerable   : false,
-    value        : require("./lib/model/dbTablaModel")
-})
 let constants=require("./lib/const.js")
 for(let i in constants)
 {
