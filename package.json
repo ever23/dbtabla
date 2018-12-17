@@ -1,0 +1,29 @@
+{
+  "name": "dbtabla",
+  "version": "0.5.1",
+  "description": "interface de alto nivel para sql",
+  "license": "MIT",
+  "author": "enyerverfranco@gmail.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ever23/dbtabla.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint  ./index.js ./lib",
+    "test": "mocha ./test/index.js"
+  },
+  "keywords": [
+    "sql",
+    "mysql",
+    "sqlite",
+    "posgresql"
+  ],
+  "devDependencies": {
+    "eslint": "^5.9.0",
+    "mocha": "^5.2.0"
+  },
+  "dependencies": {
+    "sql-model": "^1.0.0"
+  }
+}
