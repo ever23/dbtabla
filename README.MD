@@ -108,12 +108,129 @@ test1.insert(/* datos a insertar */).then(ok=>
 El metodo tabla() de mysqlTable retorna un objeto dbTabla que representa
 la tabla en la base de datos con el mismo nombre del parametro
 
-## dbtabla
+## **Connect**
+Clase abstracta para administrar la coneccion con la base de datos
+
+### Connect#tabla(tabla,[callback,[verify]])
+Factoriza y retorna un objeto dbTabla que representara a la tabla con el nombre del primer parametro
+
+* `tabla {string}`: Nombre de la tabla en la base de metadatos
+* `callback {function} (opcional)`: Funcion que sera ejecutada cuando se verifique la existencia de la tabla, esta funcion recibira un parametro que sera el objeto dbTabla creado y si la tabla no es encontrada el parametro sera *null*
+* `verify {boolean} (opcional)`: indica  si la verificacion se realizara al instante o se esperara a la primera consulta
+
+### Connect#model(tabla)
+Verifica si un modelo existe y lo retorna si no existe retorna *`false`*
+
+* `tabla {string}`: Nombre del modelo
+
+### Connect#addModel(model)
+Agrega un modelo
+* `model {sqlModel|object|string}`: Si es un objeto instanceado de sql-model se agregara a la lista de modelos, si es un objeto pero no de sql-model se tomara como los datos para factorizar un modelo deberia tener el formato *`{tabla:String, campos:Array, foreingKey:Array}`* y su es un string deberia ser una clausula sql CREATE TABLE de la cual se factorizara el modelo
+```js
+//ejemplo 1
+const model=require("sql-model")
+let connect= new Connect(/*parametros de coneccion */)
+const test2=new model("test2",{
+    campos:[
+        {
+            name:"id",
+            type:"int",
+            primary:true,
+
+        },
+        {
+            name:"row1",
+            type:"text"
+        },
+        {
+            name:"row2",
+            type:"int",
+        },
+        {
+            name:"row3",
+            type:"date",
+        }
+    ]
+})
+ connect.addModel(test2)
+```
+[Mas documentacion sobre sql-model..](https://github.com/ever23/sql-model#uso)
+```js
+//ejemplo 2
+let connect= new Connect(/*parametros de coneccion */)
+connect.addModel({
+    tabla:"test2",
+    campos:[
+        {
+            name:"id",
+            type:"int",
+            primary:true,
+        },
+        {
+            name:"row1",
+            type:"text"
+        },
+        {
+            name:"row2",
+            type:"int",
+        },
+        {
+            name:"row3",
+            type:"date",
+        }
+    ]
+})
+```
+```js
+//ejemplo 3
+let connect= new Connect(/*parametros de coneccion */)
+connect.addModel(`CREATE TABLE test2 (
+    id int,
+    row1 text,
+    row2 int,
+    row3 date,
+    primary key (id)
+)`)
+```
+
+### Connect#pathModels(path)
+Cargar todos los modelos existentes en el directorio path  
+* `path {string}`: directorio de modelos
+
+### Connect#inModel(tabla,resolve,create)
+
+Verifica si la tabla esta representada en un modelo si el parametro create es true se intentara crear la tabla e inicializarla si existe un modelo retornara *`true`* de lo contrario *`false`*
+* `tabla {string}`: nombre de la tabla
+* `resolve {function}`: funcion a ser ejecutada cuando se encuentre el modelo a la cual se le parasar un objeto con los datos del modelo
+* `create {boolean}`: indica si se creara e inicializara la tabla en la base de datos
+
+### Connect#\_\_keysInTable(tabla)
+Metodo abstracto que verificara la existencia de la tabla en la base de datos y retornar una promesa el valor de la promesa debe ser en el siguiente formato
+```js
+{
+    tabla:{String}, // nombre de la tabla   
+    colums:{Array} // columnas de la tabla
+}
+```
+* `tabla {string}`: Nombre de la tabla
+
+### Connect#query(sql)
+
+Metodo abstracto debe ejecutar una consulta sql en la base de datos y retorna una promesa
+
+* `sql {string}`: consulta sql
+
+### Connect#end()
+
+Metodo abstracto debe terminar la coneccion
+
+
+## **dbtabla**
 dbTabla es una representacion de una tabla en una base de datos para realizar
 operaciones comunes como insertar, editar, eliminar y consultar con una interface
 sencilla de usar, dbtabla cuenta con los siguientes metodos
 
-## dbTabla#insert(param, [param2, ...])
+### dbTabla#insert(param, [param2, ...])
 
 Con este metodo se pueden insertar datos en la tabla de forma sencilla pasando los datos como parametros individuales, en un *array* o *object*, retornara una promesa
 
@@ -153,7 +270,7 @@ mitabla.insert({row1:"un texto",row2:"otro texto"})
     .catch(err=>console.log(err))
 ```
 
-## dbTabla#update(sets,where)
+### dbTabla#update(sets,where)
 
 Realiza cambios a los elementos de una tabla y devuelve una promesa
 
@@ -187,7 +304,7 @@ mitabla.update({row1:"mas texto",row2:"mas texto 2"},{"||id":1,row:'un texto'})
     .catch(err=>console.log(err))
 ```
 
-## dbTabla#updateById(sets,id)
+### dbTabla#updateById(sets,id)
 
 Edita el elemento en el que el parametro id sea igual a valor de la clave primaria y devuelve una promesa
 
@@ -207,7 +324,7 @@ mitabla.updateById({row1:"mas texto",row2:"mas texto 2"},1)
     .catch(err=>console.log(err))
 ```
 
-## dbTabla#delete(where)
+### dbTabla#delete(where)
 
 Elimina uno o mas elementos de la tabla y devuelve una promesa
 
@@ -236,7 +353,7 @@ mitabla.delete({"||id":1,row:"un texto"})
     .catch(err=>console.log(err))
 ```
 
-## dbTabla#deleteById(id)
+### dbTabla#deleteById(id)
 
 Elimina el elemento de la tabla en el que el parametro id sea igual a valor de la clave primaria y devuelve una promesa
 
@@ -254,10 +371,10 @@ mitabla.deleteById(1)
 ```
 
 
-## dbTabla#select([campos,[joins,[where,[group,[having,[order,[limit]]]]]]])
+### dbTabla#select([campos,[joins,[where,[group,[having,[order,[limit]]]]]]])
 
 Este metodo realiza una consulta a la base de datos y retorna una promesa el valor
-de la promesa sera un array con los datos obtenidos, todos los parametros son opcionales
+de la promesa sera un array y cada elemeto del array sera un objeto [dbRow](#dbrow) con los datos del fila, todos los parametros son opcionales
 e intercambiables si no se pasa ningun parametro solo realizara una consulta sencilla obteniendo todos los campos de la tabla, retorna una promesa.
 
 * `campos {array|string|object}`: Este parametro si es un *array* sera la lista de campos
@@ -271,7 +388,7 @@ por defecto es *natural join*.
 
 * `group {string}`: es parametro sera la clausula *group by* de la consulta
 
-* `having {string}`: sera la exprecion booleana sql para having
+* `having {string}`: sera la exprecion booleana sql para having funciona igual que el parametro where
 
 * `order {string}`: si esta presente sera el valor de *order by*
 
@@ -317,11 +434,11 @@ mitabla.select("id=1 or id=2",{">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row
     }).catch(e=>console.log(e))
 ```
 
-## dbTabla#selectOne([campos,[joins,[where,[group,[having,[order]]]]]])
+### dbTabla#selectOne([campos,[joins,[where,[group,[having,[order]]]]]])
 
-Igual que select pero solo se obtendra de la promesa un objeto con con  la fila obtenida si no se obtiene nada sea null.
+Igual que select pero solo se obtendra de la promesa un objeto [dbRow](#dbrow) con con  la fila obtenida si no se obtiene nada sea null.
 
-## dbTabla#selectById(campos,[joins,[id]])
+### dbTabla#selectById(campos,[joins,[id]])
 
 Igual que el metodo anterior pero en este caso seleccionara por el valor de la clave primaria  
 
@@ -371,7 +488,7 @@ mitabla.select(["id","row1"],{">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2
     }).catch(e=>console.log(e))
 ```
 
-## dbTabla#busqueda(texto,campos_bus,[campos,[joins,[where,[group,[having,[order,[limit]]]]]]])
+### dbTabla#busqueda(texto,campos_bus,[campos,[joins,[where,[group,[having,[order,[limit]]]]]]])
 
 
 Este metodo realiza una busqueda en la tabla con un algoritmo interno sql y devuelve una promesa.
@@ -397,7 +514,43 @@ por defecto es *natural join*.
 
 * `limit {numeric|string}`: el limite de resultados a obtener
 
+## **dbRow**
+Esta clase representa una fila obtenida en *`dbTabla#select()`*, *`dbTabla#selectOne()`* o *`dbTabla#selectById()`*
 
+### dbRow#update()
+Guarda los cambios de la fila en la tabla donde fue factorizado el objeto y retorna una promesa
+```js
+// tu codigo...
+let mitabla=connect.tabla("mitabla")
+// select mitabla.* from mitabla where id=1;
+mitabla.selectById(1)
+    .then(row=>{
+        row.row1="cambio de texto"
+        // update mitabla set row1="cambio de texto" where id=1
+        row.update().then(ok=>
+        {
+            console.log(ok)
+        }).catch(e=>console.log(e))
+    }).catch(e=>console.log(e))
+
+```
+### dbRow#delete()
+Elimina la fila de la base de datos y retorna una promesa
+
+```js
+// tu codigo...
+let mitabla=connect.tabla("mitabla")
+// select mitabla.* from mitabla where id=1;
+mitabla.selectById(1)
+    .then(row=>{
+        // delete from mitabla where id=1
+        row.delete().then(ok=>
+        {
+            console.log(ok)
+        }).catch(e=>console.log(e))
+    }).catch(e=>console.log(e))
+
+```
 
 [npm-image]: https://img.shields.io/npm/v/dbtabla.svg
 [npm-url]: https://npmjs.org/package/dbtabla
