@@ -386,13 +386,16 @@ por defecto es *natural join*.
 
 * `where {string|object}`: exprecion booleana sql para where, si es de tipo *object* los atributos seran el campo y su valor con lo que se comparara por defecto se utilizara el operador *and* para separar las comparaciones pero si se antepone el operador *||* al nombre del atributo se usara el operador *or* y el operrador *`=`* para realizar las comparaciones para cambiarlo solo se tiene que colocar el operador de comparacion al final del nombre del atributo los operadores aceptados son *`<,<=,>,>=,=,!=`* y para like *`%`*, si el valor del atributo es un array todos sus elemenos seran comparados con el nombre del atributo unado el operador *`OR`*.
 
-* `group {string}`: es parametro sera la clausula *group by* de la consulta
+* `group {string|object}`: es parametro sera la clausula *group by* de la consulta si es de tipo `object` sera tomado como el parametro having
 
 * `having {string}`: sera la exprecion booleana sql para having funciona igual que el parametro where
 
 * `order {string}`: si esta presente sera el valor de *order by*
 
 * `limit {numeric|string}`: el limite de resultados a obtener
+
+Si cualquiera de los parametros es de tipo *`Number`* sera tomado como el parametro limit y los parametros siguientes seran ignorados o si es de tipo *`String`* y coincide con la exprecion 
+*`/^[\s]*(group[\s]+by|having|order[\s]+by|limit)/i`* sera tomado como el parametro que conicida y los siguientes se correran 
 
 Ejemplo de uso:
 ```js
@@ -428,7 +431,27 @@ left join tabla1 using(row1)
 ringt join tabla2 on(tabla2.id=mitabla.row2)
 where id=1 or id=2;
 */
-mitabla.select("id=1 or id=2",{">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"})
+mitabla.select({">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},"id=1 or id=2")
+    .then(data=>{
+        console.log(data)    
+    }).catch(e=>console.log(e))
+/*
+select mitabla.* from mitabla
+left join tabla1 using(row1)
+ringt join tabla2 on(tabla2.id=mitabla.row2)
+oder by id
+*/
+mitabla.select({">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},"oder by id")
+    .then(data=>{
+        console.log(data)    
+    }).catch(e=>console.log(e))
+    /*
+select mitabla.* from mitabla
+left join tabla1 using(row1)
+ringt join tabla2 on(tabla2.id=mitabla.row2)
+oder by id
+*/
+mitabla.select({">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},"oder by id")
     .then(data=>{
         console.log(data)    
     }).catch(e=>console.log(e))

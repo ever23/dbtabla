@@ -1,6 +1,6 @@
 {
   "name": "dbtabla",
-  "version": "0.7.1",
+  "version": "0.7.8",
   "description": "interface de alto nivel para sql",
   "license": "MIT",
   "author": "enyerverfranco@gmail.com",
@@ -24,6 +24,6 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
-    "sql-model": "^1.0.0"
+    "sql-model": "^1.0.1"
   }
 }

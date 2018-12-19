@@ -8,14 +8,7 @@ describe("Test de la clase prosessingSql",()=>{
     })
     let config=
     [
-        /*"unatabla",
-        {
-            OrderColum:["row1","row2","row3","row4"],
-            colum:{"row1":{},"row2":{},"row3":{},"row4":{}},
-            primary:["row1"],
-            autoinrement:"row1",
-
-        },*/
+        
         {
             tabla:"unatabla",
             colums:[
@@ -82,13 +75,10 @@ describe("Test de la clase prosessingSql",()=>{
     it("metodo __where",()=>
     {
         let tabla = new procesingSql(...config)
-
         let result1="WHERE id='12a' and id2=3"
         let result2="WHERE `id`='12a' AND `id2`=3"
-
         assert.equal(tabla.__where("id='12a' and id2=3"),result1)
         assert.equal(tabla.__where({id:"12a","id2":3}),result2)
-
 
     })
     it("metodo __having",()=>
@@ -103,60 +93,135 @@ describe("Test de la clase prosessingSql",()=>{
 
 
     })
+    it("metodo __groupBy",()=>
+    {
+        let tabla = new procesingSql(...config)
+        let result1="GROUP BY id"
+        assert.equal(tabla.__groupBy("id"),result1)
+        assert.equal(tabla.__groupBy("  group   by   id"),result1)
+        assert.equal(tabla.__groupBy(["id"]),result1)
+    })
+    it("metodo __orderBy",()=>
+    {
+        let tabla = new procesingSql(...config)
+        let result1="ORDER BY id"
+        assert.equal(tabla.__orderBy("id"),result1)
+        assert.equal(tabla.__orderBy("  order   by   id"),result1)
+        assert.equal(tabla.__orderBy(["id"]),result1)
+    })
+    it("metodo __limit",()=>
+    {
+        let tabla = new procesingSql(...config)
+        let result1="LIMIT 1"
+        assert.equal(tabla.__limit(1),result1)
+        assert.equal(tabla.__limit("1"),result1)
+        assert.equal(tabla.__limit("  limit   1"),result1)
+    })
     it("metodo __resolveParamsSelect",()=>
     {
         let tabla = new procesingSql(...config)
 
 
-        assert.deepEqual(tabla.__resolveParamsSelect(),[
-            "SELECT ",
-            ["unatabla.*"],
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined])
-        assert.deepEqual(tabla.__resolveParamsSelect("a='v'"),[
-            "SELECT ",
-            ["unatabla.*"],//campos
-            undefined,//join
-            "a='v'",//where
-            undefined,//group
-            undefined,//having
-            undefined,//order
-            undefined//limit
-        ])
-        assert.deepEqual(tabla.__resolveParamsSelect(["a","b"],{">a":"id"}),[
-            "SELECT ",
-            ["a","b"],//campos
-            {">a":"id"},//join
-            undefined,//where
-            undefined,//group
-            undefined,//having
-            undefined,//order
-            undefined//limit
-        ])
-        assert.deepEqual(tabla.__resolveParamsSelect(["a","b"],{">a":"id"},"group by id"),[
-            "SELECT ",
-            ["a","b"],//campos
-            {">a":"id"},//join
-            undefined,//where
-            "group by id",//group
-            undefined,//having
-            undefined,//order
-            undefined//limit
-        ])
-        assert.deepEqual(tabla.__resolveParamsSelect(["a","b"],{">a":"id"},"limit 2"),[
-            "SELECT ",
-            ["a","b"],//campos
-            {">a":"id"},//join
-            undefined,//where
-            undefined,//group
-            undefined,//having
-            undefined,//order
-            "limit 2"//limit
-        ])
+        assert.deepEqual(tabla.__resolveParamsSelect(),{
+            campos:undefined,//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect({">a":"id"}),{
+            campos:undefined,//campos
+            joins:{">a":"id"},//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect("a='v'"),{
+            campos:undefined,//campos
+            joins:undefined,//join
+            where:"a='v'",//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect("group by id"),{
+            campos:undefined,//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:"group by id",//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect("having id=1"),{
+            campos:undefined,//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:undefined,//group
+            having:"having id=1",//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect("order by id"),{
+            campos:undefined,//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:"order by id",//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect("limit 1"),{
+            campos:undefined,//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:"limit 1"//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect(["a","b"],{">a":"id"}),{
+            campos:["a","b"],//campos
+            joins:{">a":"id"},//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect(["a","b"],"group by id",{"id":1}),{
+            campos:["a","b"],//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:"group by id",//group
+            having:{"id":1},//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect(["a","b"],{">a":"id"},2),{
+            campos:["a","b"],//campos
+            joins:{">a":"id"},//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:2//limit
+        })
+        assert.deepEqual(tabla.__resolveParamsSelect({campos:['a','b']}),{
+            campos:["a","b"],//campos
+            joins:undefined,//join
+            where:undefined,//where
+            group:undefined,//group
+            having:undefined,//having
+            order:undefined,//order
+            limit:undefined//limit
+        })
+        
 
     })
     it("metodo __campoBusqueda",()=>
@@ -182,7 +247,7 @@ describe("Test de la clase prosessingSql",()=>{
         value+="(`row1` is NOT NULL AND `row1` like '%otra%') + (`row1` is NOT NULL AND `row1` like 'otra%')+"
         value+="(`row2` is NOT NULL AND `row2` like '%otra%') + (`row2` is NOT NULL AND `row2` like 'otra%')+"
         value+="((CONCAT(IF(`row1` IS NOT NULL,`row1`,' '),' ',IF(`row2` IS NOT NULL,`row2`,' '),' ','') like '%cadena otra' )+1)"
-        let sql = "SELECT ("+value+") as `puntaje_busqueda`,`unatabla`.* FROM `unatabla`  WHERE (row3='a') AND ("+value+")>1   order by puntaje_busqueda DESC;"
+        let sql = "SELECT ("+value+") as `puntaje_busqueda`,`unatabla`.* FROM `unatabla` WHERE (row3='a') AND ("+value+")>1 ORDER BY puntaje_busqueda DESC;"
         assert.deepEqual(tabla.busqueda('cadena otra',['row1','row2'],"row3='a'"),sql)
 
     })
