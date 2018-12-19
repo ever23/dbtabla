@@ -16,7 +16,7 @@ describe("Test de la clase prosessingSql",()=>{
                     name:"row1",
                     type:"int",
                     prymary:true,
-                    autoinrement:true
+                    autoincrement:true
                 },
                 {
                     name:"row2",
@@ -25,10 +25,12 @@ describe("Test de la clase prosessingSql",()=>{
                 {
                     name:"row3",
                     type:"text",
+                    defaultNull:true
                 },
                 {
                     name:"row4",
                     type:"text",
+                    default:"'mi texto default'"
                 }
 
             ]
@@ -41,8 +43,7 @@ describe("Test de la clase prosessingSql",()=>{
     {
         let tabla = new procesingSql(...config)
         assert.equal(typeof tabla.__join,"function")
-        assert.equal(typeof tabla.__where,"function")
-        assert.equal(typeof tabla.__having,"function")
+        assert.equal(typeof tabla.__booleanSql,"function")
         assert.equal(typeof tabla.select,"function")
         assert.equal(typeof tabla.insert,"function")
         assert.equal(typeof tabla.update,"function")
@@ -72,25 +73,13 @@ describe("Test de la clase prosessingSql",()=>{
         assert.deepEqual(tabla.__join({">unatabla":["id1","id2"]}),["LEFT JOIN `unatabla` USING(`id1`,`id2`)"])
 
     })
-    it("metodo __where",()=>
+    it("metodo __booleanSql",()=>
     {
         let tabla = new procesingSql(...config)
         let result1="WHERE id='12a' and id2=3"
-        let result2="WHERE `id`='12a' AND `id2`=3"
-        assert.equal(tabla.__where("id='12a' and id2=3"),result1)
-        assert.equal(tabla.__where({id:"12a","id2":3}),result2)
-
-    })
-    it("metodo __having",()=>
-    {
-        let tabla = new procesingSql(...config)
-
-        let result1="HAVING id='12a' and id2=3"
         let result2="HAVING `id`='12a' AND `id2`=3"
-
-        assert.equal(tabla.__having("id='12a' and id2=3"),result1)
-        assert.equal(tabla.__having({id:"12a","id2":3}),result2)
-
+        assert.equal(tabla.__booleanSql("WHERE","id='12a' and id2=3"),result1)
+        assert.equal(tabla.__booleanSql("HAVING",{id:"12a","id2":3}),result2)
 
     })
     it("metodo __groupBy",()=>
@@ -270,7 +259,10 @@ describe("Test de la clase prosessingSql",()=>{
     {
         let tabla = new procesingSql(...config)
         assert.equal(tabla.insert(["a",2,"b",1]),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`,`row4`) VALUES ('a',2,'b',1);","arrays")
-        assert.equal(tabla.insert({row1:"a",row2:2,row4:undefined,row3:"b"}),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`,`row4`) VALUES ('a',2,'b',NULL);","object")
+        assert.equal(tabla.insert({row1:"a",row2:2,row4:undefined,row3:"b"}),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`) VALUES ('a',2,'b');","object")
+        assert.equal(tabla.insert([null,"a",null,"b"]),"INSERT INTO `unatabla` (`row2`,`row4`) VALUES ('a','b');","array null")
+        assert.equal(tabla.insert({row1:"a",row2:2,row4:"b"}),"INSERT INTO `unatabla` (`row1`,`row2`,`row4`) VALUES ('a',2,'b');","array null")
+        assert.equal(tabla.insert({row1:"a",row2:2,row3:"b"}),"INSERT INTO `unatabla` (`row1`,`row2`,`row3`) VALUES ('a',2,'b');","array null")
 
     })
     it("metodo update",()=>

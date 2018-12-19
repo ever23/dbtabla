@@ -136,7 +136,6 @@ const test2=new model("test2",{
             name:"id",
             type:"int",
             primary:true,
-
         },
         {
             name:"row1",
