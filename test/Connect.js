@@ -13,6 +13,7 @@ describe("Test de la clase Connect",()=>
         assert.equal(typeof dataBase.pathModels,"function")
         assert.equal(typeof dataBase.model,"function")
         assert.equal(typeof dataBase.tabla,"function")
+        assert.equal(typeof dataBase.helpersConf,"function")
 
     })
     it("verificacion de modelos",()=>

@@ -13,8 +13,6 @@
 
 ## install
 
-
-
 dbtabla es un  modulo de [Node.js](https://nodejs.org/es/) valido registrado en [npm registry](https://www.npmjs.com/).
 
 Para instalar use [`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
@@ -30,7 +28,7 @@ Escrito en JavaScript
 ## uso
 
 Para usar este modulo es nesesario extender la clase Connect para crear
-la clase de coneccion para el motor de base de datos elegido
+la clase de conexion para el motor de base de datos elegido
 ejemplo:
 ```js
 // file mysqlTable.js
@@ -41,7 +39,7 @@ class mysqlTable extends connect
     constructor(params)
     {
         super(params,MYSQL_DB)
-        // aqui su codigo de inicializacion y coneccion
+        // aqui su codigo de inicializacion y conexion
     }
     query(sql)
     {
@@ -60,7 +58,7 @@ class mysqlTable extends connect
 
 Deben ser redefinidos los metodos *`constructor, query, __escapeString, __keysInTable`*
 
-- En el constructor se establecera la coneccion
+- En el constructor se establecera la conexion
 
 - *`query`*: debe ejecutar el sql recibido en su parametro y retornar una promesa
 
@@ -109,12 +107,12 @@ El metodo tabla() de mysqlTable retorna un objeto dbTabla que representa
 la tabla en la base de datos con el mismo nombre del parametro
 
 ## **Connect**
-Clase abstracta para administrar la coneccion con la base de datos
+Clase abstracta para administrar la conexion con la base de datos
 
 ### Connect#tabla(tabla,[callback,[verify]])
 Factoriza y retorna un objeto dbTabla que representara a la tabla con el nombre del primer parametro
 
-* `tabla {string}`: Nombre de la tabla en la base de metadatos
+* `tabla {string}`: Nombre de la tabla en la base de datos
 * `callback {function} (opcional)`: Funcion que sera ejecutada cuando se verifique la existencia de la tabla, esta funcion recibira un parametro que sera el objeto dbTabla creado y si la tabla no es encontrada el parametro sera *null*
 * `verify {boolean} (opcional)`: indica  si la verificacion se realizara al instante o se esperara a la primera consulta
 
@@ -125,11 +123,12 @@ Verifica si un modelo existe y lo retorna si no existe retorna *`false`*
 
 ### Connect#addModel(model)
 Agrega un modelo
-* `model {sqlModel|object|string}`: Si es un objeto instanceado de sql-model se agregara a la lista de modelos, si es un objeto pero no de sql-model se tomara como los datos para factorizar un modelo deberia tener el formato *`{tabla:String, campos:Array, foreingKey:Array}`* y su es un string deberia ser una clausula sql CREATE TABLE de la cual se factorizara el modelo
+* `model {sqlModel|object|string}`: Si es un objeto instanceado de sql-model se agregara a la lista de modelos, si es un objeto pero no de sql-model se tomara como los datos para factorizar un modelo deberia tener el formato *`{tabla:String, campos:Array, foreingKey:Array}`* y si es un string deberia ser una clausula sql *`CREATE TABLE`* de la cual se factorizara el modelo
+[Mas documentacion sobre sql-model..](https://github.com/ever23/sql-model#uso)
 ```js
 //ejemplo 1
 const model=require("sql-model")
-let connect= new Connect(/*parametros de coneccion */)
+let connect= new Connect(/*parametros de conexion */)
 const test2=new model("test2",{
     campos:[
         {
@@ -151,12 +150,11 @@ const test2=new model("test2",{
         }
     ]
 })
- connect.addModel(test2)
+connect.addModel(test2)
 ```
-[Mas documentacion sobre sql-model..](https://github.com/ever23/sql-model#uso)
 ```js
 //ejemplo 2
-let connect= new Connect(/*parametros de coneccion */)
+let connect= new Connect(/*parametros de conexion */)
 connect.addModel({
     tabla:"test2",
     campos:[
@@ -182,7 +180,7 @@ connect.addModel({
 ```
 ```js
 //ejemplo 3
-let connect= new Connect(/*parametros de coneccion */)
+let connect= new Connect(/*parametros de conexion */)
 connect.addModel(`CREATE TABLE test2 (
     id int,
     row1 text,
@@ -196,11 +194,10 @@ connect.addModel(`CREATE TABLE test2 (
 Cargar todos los modelos existentes en el directorio path  
 * `path {string}`: directorio de modelos
 
-### Connect#inModel(tabla,resolve,create)
+### Connect#inModel(tabla,create)
 
-Verifica si la tabla esta representada en un modelo si el parametro create es true se intentara crear la tabla e inicializarla si existe un modelo retornara *`true`* de lo contrario *`false`*
+Verifica si la tabla esta representada en un modelo si el parametro create es true se intentara crear la tabla e inicializarla retorna una promesa si no existe el modelo lanzara un catch 
 * `tabla {string}`: nombre de la tabla
-* `resolve {function}`: funcion a ser ejecutada cuando se encuentre el modelo a la cual se le parasar un objeto con los datos del modelo
 * `create {boolean}`: indica si se creara e inicializara la tabla en la base de datos
 
 ### Connect#\_\_keysInTable(tabla)
@@ -215,13 +212,13 @@ Metodo abstracto que verificara la existencia de la tabla en la base de datos y 
 
 ### Connect#query(sql)
 
-Metodo abstracto debe ejecutar una consulta sql en la base de datos y retorna una promesa
+Metodo abstracto debe ejecutar una consulta sql en la base de datos y retornar una promesa
 
 * `sql {string}`: consulta sql
 
 ### Connect#end()
 
-Metodo abstracto debe terminar la coneccion
+Metodo abstracto debe terminar la conexion
 
 
 ## **dbtabla**
@@ -249,7 +246,7 @@ mitabla.insert({id:1,row1:"un texto",row2:"otro texto"})
     .then(ok=>console.log(ok))
     .catch(err=>console.log(err))
 ```
-Las tres llamadas daran el mismo resultado, si se tiene una campo que esta marcado como *`AUTO_INCREMENT`* en mysql o un campo de *`serial`* en postgresql se puede dar el valor de null o obviarse cuando se pasan los datos en un objeto
+Las tres llamadas daran el mismo resultado, si se tiene un campo que esta marcado como *`AUTO_INCREMENT`* en mysql o un campo de *`serial`* en postgresql se puede dar el valor de null o obviarse cuando se pasan los datos en un objeto
 
 En el siguien ejemplo en campo id es el valor auto_increment
 ```js
@@ -494,7 +491,7 @@ left join tabla1 using(row1)
 ringt join tabla2 on(tabla2.id=mitabla.row2)
 where id=1;
 */
-mitabla.select({">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},1)
+mitabla.selectById({">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},1)
     .then(row=>{
         console.log(row)    
     }).catch(e=>console.log(e))
@@ -504,7 +501,7 @@ left join tabla1 using(row1)
 ringt join tabla2 on(tabla2.id=mitabla.row2)
 where id=1;
 */
-mitabla.select(["id","row1"],{">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},1)
+mitabla.selectById(["id","row1"],{">tabla1":"row1","<tabla2":"tabla2.id=mitabla.row2"},1)
     .then(row=>{
         console.log(row)    
     }).catch(e=>console.log(e))

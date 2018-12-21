@@ -79,6 +79,7 @@ describe("Test de la clase prosessingSql",()=>{
         let result1="WHERE id='12a' and id2=3"
         let result2="HAVING `id`='12a' AND `id2`=3"
         assert.equal(tabla.__booleanSql("WHERE","id='12a' and id2=3"),result1)
+        assert.equal(tabla.__booleanSql("WHERE","  where   id='12a' and id2=3"),result1)
         assert.equal(tabla.__booleanSql("HAVING",{id:"12a","id2":3}),result2)
 
     })

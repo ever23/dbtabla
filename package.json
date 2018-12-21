@@ -1,6 +1,6 @@
 {
   "name": "dbtabla",
-  "version": "0.8.0",
+  "version": "0.8.5",
   "description": "interface de alto nivel para sql",
   "license": "MIT",
   "author": "enyerverfranco@gmail.com",
