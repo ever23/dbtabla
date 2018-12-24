@@ -30,7 +30,7 @@ Escrito en JavaScript
 Para usar este modulo es nesesario extender la clase Connect para crear
 la clase de conexion para el motor de base de datos elegido
 ejemplo:
-```js
+```js 
 // file mysqlTable.js
 const {MYSQL_DB,connect}=require("dbtabla")
 const mysql=require("mysql")
@@ -56,7 +56,7 @@ class mysqlTable extends connect
 }
 ```
 
-Deben ser redefinidos los metodos *`constructor, query, __escapeString, __keysInTable`*
+Deben ser redefinidos los metodos *`constructor`*, *`query`*, *`__escapeString`*, *`__keysInTable`*
 
 - En el constructor se establecera la conexion
 
