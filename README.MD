@@ -123,11 +123,11 @@ Verifica si un modelo existe y lo retorna si no existe retorna *`false`*
 
 ### Connect#addModel(model)
 Agrega un modelo
-* `model {sqlModel|object|string}`: Si es un objeto instanceado de sql-model se agregara a la lista de modelos, si es un objeto pero no de sql-model se tomara como los datos para factorizar un modelo deberia tener el formato *`{tabla:String, campos:Array, foreingKey:Array}`* y si es un string deberia ser una clausula sql *`CREATE TABLE`* de la cual se factorizara el modelo
-[Mas documentacion sobre sql-model..](https://github.com/ever23/sql-model#uso)
+* `model {sqlModel|object|string}`: Si es un objeto instanceado de tabla-model se agregara a la lista de modelos, si es un objeto pero no de tabla-model se tomara como los datos para factorizar un modelo deberia tener el formato *`{tabla:String, campos:Array, foreingKey:Array}`* y si es un string deberia ser una clausula sql *`CREATE TABLE`* de la cual se factorizara el modelo
+[Mas documentacion sobre tabla-model..](https://github.com/ever23/tabla-model#uso)
 ```js
 //ejemplo 1
-const model=require("sql-model")
+const model=require("tabla-model")
 let connect= new Connect(/*parametros de conexion */)
 const test2=new model("test2",{
     campos:[

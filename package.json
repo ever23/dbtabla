@@ -24,6 +24,6 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
-    "sql-model": "^1.0.3"
+    "tabla-model": "^1.0.3"
   }
 }
