@@ -14,4 +14,11 @@ for(let i in constants)
         value        : constants[i]
     })
 }
+
+dbTabla.Connect = require("./lib/Connect")
+dbTabla.dbResult = require("./lib/dbResult")
+dbTabla.dbRow = require("./lib/dbRow")
+dbTabla.dbTablaError = require("./lib/dbTablaError")
+dbTabla.procesingSql = require("./lib/procesingSql")
+
 module.exports=dbTabla
