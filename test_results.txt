@@ -1,0 +1,65 @@
+﻿
+> dbtabla@2.1.1 test
+> node --test ./test/index.js
+
+ÔûÂ test de dbTabla
+  ÔûÂ Test de la clase prosessingSql
+    Ô£ö verificacion de metodos (1.2094ms)
+    Ô£ö metodo busqueda (2.2858ms)
+    Ô£ö metodo select (1.1186ms)
+    Ô£ö metodo select (0.2998ms)
+    Ô£ö metodo insert (0.6902ms)
+    Ô£ö metodo update (0.4324ms)
+    Ô£ö metodo delete (0.3132ms)
+  Ô£ö Test de la clase prosessingSql (7.4947ms)
+  ÔûÂ Test de la clase Connect
+    Ô£ö verificacion de metodos (0.2097ms)
+    Ô£ö verificacion de modelos (2.2262ms)
+    Ô£ö verificacion de tabla (0.3958ms)
+  Ô£ö Test de la clase Connect (3.0674ms)
+  ÔûÂ Test de la clase dbRow
+    Ô£ö verificacion de metodos (0.2598ms)
+    Ô£û metodo update (1.4786ms)
+    Ô£ö metodo update sin claves primarias (0.367ms)
+    Ô£û metodo delete (0.6469ms)
+    Ô£ö metodo delete sin claves primarias (0.246ms)
+  Ô£û Test de la clase dbRow (3.3226ms)
+Ô£û test de dbTabla (14.5938ms)
+Ôä╣ tests 15
+Ôä╣ suites 4
+Ôä╣ pass 13
+Ôä╣ fail 2
+Ôä╣ cancelled 0
+Ôä╣ skipped 0
+Ôä╣ todo 0
+Ôä╣ duration_ms 168.9837
+
+Ô£û failing tests:
+
+test at test\dbRow.js:74:5
+Ô£û metodo update (1.4786ms)
+  AssertionError [ERR_ASSERTION]: "UPDATE test1 SET col1=2343 WHERE id=1 AND col1=234 AND col2='row';" == 'UPDATE test1 SET col1=2343 WHERE id=1;'
+      at C:\programacion\dbtabla\dbtabla\test\dbRow.js:90:20
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "UPDATE test1 SET col1=2343 WHERE id=1 AND col1=234 AND col2='row';",
+    expected: 'UPDATE test1 SET col1=2343 WHERE id=1;',
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at test\dbRow.js:111:5
+Ô£û metodo delete (0.6469ms)
+  AssertionError [ERR_ASSERTION]: "DELETE FROM test1 WHERE id=1 AND col1=234 AND col2='row';" == 'DELETE FROM test1 WHERE id=1;'
+      at C:\programacion\dbtabla\dbtabla\test\dbRow.js:122:20
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "DELETE FROM test1 WHERE id=1 AND col1=234 AND col2='row';",
+    expected: 'DELETE FROM test1 WHERE id=1;',
+    operator: '==',
+    diff: 'simple'
+  }

@@ -1,43 +1,4 @@
 const { describe, it } = require('node:test');
-const assert= require("assert")
-const dbRow= require("../lib/dbRow.js")
-const dbTabla= require("../lib/dbTabla.js")
-const connect = require("../lib/Connect")
-class testConnect extends connect {
-    __keysInTable(table)
-    {
-        return new Promise((res)=>
-        {
-            res({
-                tabla:table,
-                colums:[
-                    {
-                        name:"id",
-                        type:"int",
-                        primary:true,
-                    },
-                    {
-                        name:"col1",
-                        type:"int"
-
-                    },
-                    {
-                        name:"col2",
-                        type:"text"
-                    }
-                ]
-            })
-        })
-    }
-}
-class test2Connect extends connect {
-    __keysInTable(table)
-    {
-        return new Promise((res)=>
-        {
-            res({
-                tabla:table,
-                colums:[
                     {
                         name:"id",
                         type:"int",
