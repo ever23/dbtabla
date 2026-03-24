@@ -1,6 +1,6 @@
 {
   "name": "dbtabla",
-  "version": "0.8.8",
+  "version": "2.0.0",
   "description": "interface de alto nivel para sql",
   "license": "MIT",
   "author": "enyerverfranco@gmail.com",
@@ -11,7 +11,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint  ./index.js ./lib",
-    "test": "mocha ./test/index.js"
+    "test": "node --test ./test/index.js"
   },
   "keywords": [
     "sql",
@@ -20,10 +20,14 @@
     "posgresql"
   ],
   "devDependencies": {
-    "eslint": "^5.9.0",
-    "mocha": "^5.2.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0"
   },
   "dependencies": {
-    "tabla-model": "^1.0.3"
+    "tabla-model": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

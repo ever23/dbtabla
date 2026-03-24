@@ -1,3 +1,4 @@
+const { describe, it } = require('node:test');
 const assert= require("assert")
 const {connect}= require("../index.js")
 const model = require("tabla-model")
