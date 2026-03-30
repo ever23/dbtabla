@@ -9,9 +9,15 @@
     "url": "git+https://github.com/ever23/dbtabla.git"
   },
   "main": "index.js",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./index.mjs"
+    }
+  },
   "scripts": {
     "lint": "eslint  ./index.js ./lib",
-    "test": "node --test ./test/index.js"
+    "test": "node --test ./test/"
   },
   "keywords": [
     "sql",

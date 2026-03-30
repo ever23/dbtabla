@@ -3,7 +3,6 @@ const assert= require("assert")
 const {connect}= require("../index.js")
 const model = require("tabla-model")
 const dbTabla= require("../index.js")
-//const dbTabla= require("../lib/dbTabla.js")
 
 describe("Test de la clase Connect",()=>
 {
@@ -17,12 +16,16 @@ describe("Test de la clase Connect",()=>
         assert.equal(typeof dataBase.helpersConf,"function")
 
     })
-    it("verificacion de modelos",()=>
+    it("verificacion de modelos",async ()=>
     {
         let dataBase = new connect()
         dataBase.pathModels(__dirname+"/model")
+        // Esperamos un poco para que los modelos ESM se carguen ya que import() es asincrono
+        await new Promise(res => setTimeout(res, 100));
+        
         assert.ok(dataBase.model("test1"),"no debe retornar false")
         assert.ok(dataBase.model("test2") instanceof model,"no es un modelo")
+        assert.ok(dataBase.model("test_esm"), "debe cargar el modelo ESM")
         assert.equal(dataBase.model("nomodel"),false,"debe retornar false")
     })
     it("verificacion de tabla",()=>
