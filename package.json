@@ -13,7 +13,9 @@
     ".": {
       "require": "./index.js",
       "import": "./index.mjs"
-    }
+    },
+    "./lib/dbResult": "./lib/dbResult.js",
+    "./lib/dbRow": "./lib/dbRow.js"
   },
   "scripts": {
     "lint": "eslint  ./index.js ./lib",
