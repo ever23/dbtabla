@@ -129,10 +129,10 @@ Actualiza registros coincidentes con los criterios.
 * `where`: Puede ser un string SQL o un objeto descriptivo para filtrado dinámico.
 ```js
 // update usuarios set rol='Senior' where id=1
-miTabla.update({ rol: 'Senior' }, { id: 1 });
+miTabla.update({ rol: 'Senior' }, "id = 1");
 
-// Criterios OR dinámicos usando "||"
-miTabla.update({ rol: 'Senior' }, { "||id": 1, "nombre": "Admin" });
+// Criterios dinámicos usando objetos
+miTabla.update({ rol: 'Senior' }, { id: 1, nombre: "Admin" });
 ```
 
 #### `dbTabla#delete(where)`
