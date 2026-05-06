@@ -145,6 +145,56 @@ Poderoso motor de búsqueda y selección que retorna objetos `dbRow`.
 * `where {string|object}`: Criterios de filtrado SQL.
 * `order / limit`: Criterios de ordenación y paginación.
 
+#### Sintaxis Avanzada de Filtrado (Where Object)
+Cuando se utiliza un objeto para la cláusula `where`, se pueden emplear prefijos y sufijos especiales para construir consultas complejas:
+
+**1. Operadores de Comparación (Sufijos):**
+*   `campo%`: Se traduce como `campo LIKE 'valor'`.
+*   `campo!`: Se traduce como `campo != 'valor'`.
+*   `campo>`: Se traduce como `campo > 'valor'`.
+*   `campo<`: Se traduce como `campo < 'valor'`.
+*   `campo>=`: Se traduce como `campo >= 'valor'`.
+*   `campo<=`: Se traduce como `campo <= 'valor'`.
+
+**2. Operadores Lógicos (Prefijos):**
+*   `||campo`: Cambia el operador lógico a `OR` (por defecto es `AND`).
+*   `&&campo`: Asegura el uso de `AND` (comportamiento por defecto).
+
+**Ejemplo Combinado:**
+```javascript
+miTabla.select("*", { 
+    "estado": "activo", 
+    "||nombre%": "Anti%", 
+    "edad>": 18 
+});
+// Genera: WHERE estado = 'activo' OR nombre LIKE 'Anti%' AND edad > 18
+```
+
+> [!IMPORTANT]
+> **Uso de Parámetros Polimórficos:**
+> Los métodos `select` y `busqueda` detectan el tipo de datos para ajustar los parámetros automáticamente. Si pasas un **objeto** en las primeras posiciones, la librería podría interpretarlo como una definición de **Joins** en lugar de filtros **Where**.
+> 
+> Para usar un objeto de filtrado `where` de forma segura sin definir campos ni joins, utiliza `null`:
+> ```javascript
+> // Correcto: (campos, joins, where)
+> await tabla.select(null, null, { "usuario": "admin" });
+> ```
+
+### Sintaxis de Objeto Único (Recomendada)
+Para evitar confusiones con el orden de los parámetros y el polimorfismo, puedes pasar un único objeto con propiedades nombradas:
+
+```javascript
+await miTabla.select({
+    where: { "estado": "activo", "puntos>": 100 },
+    campos: ["id", "nombre"],
+    order: "id DESC",
+    limit: 5
+});
+```
+Esta sintaxis está soportada en `select`, `selectOne` y `busqueda`.
+
+---
+
 ```js
 // Búsquedas complejas con Joins dinámicos
 miTabla.select(
