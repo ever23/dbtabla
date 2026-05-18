@@ -141,7 +141,11 @@ Elimina registros coincidentes con la cláusula `where`.
 #### `dbTabla#select([campos], [joins], [where], ...)`
 Poderoso motor de búsqueda y selección que retorna objetos `dbRow`.
 * `campos {array|string}`: Lista de columnas a seleccionar.
-* `joins {object}`: Definición de uniones entre tablas.
+* `joins {object}`: Definición de uniones entre tablas. Utilice prefijos para especificar el tipo de unión:
+    * `>tabla`: LEFT JOIN
+    * `<tabla`: RIGHT JOIN
+    * `=tabla`: INNER JOIN
+    * `tabla` (sin prefijo): NATURAL JOIN / USING automático.
 * `where {string|object}`: Criterios de filtrado SQL.
 * `order / limit`: Criterios de ordenación y paginación.
 

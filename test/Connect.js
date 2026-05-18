@@ -28,6 +28,15 @@ describe("Test de la clase Connect",()=>
         assert.ok(dataBase.model("test_esm"), "debe cargar el modelo ESM")
         assert.equal(dataBase.model("nomodel"),false,"debe retornar false")
     })
+    it("carga de modelos con ruta relativa (compatibilidad Windows/Linux)",async ()=>
+    {
+        let dataBase = new connect()
+        // La ruta es relativa al CWD desde donde se ejecutan los tests
+        dataBase.pathModels("./test/model")
+        await new Promise(res => setTimeout(res, 100));
+        
+        assert.ok(dataBase.model("test1"),"no debe retornar false usando rutas relativas cruzadas")
+    })
     it("verificacion de tabla",()=>
     {
         let dataBase = new connect()
