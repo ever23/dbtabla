@@ -1,24 +1,33 @@
-const dbTabla=require("./lib/dbTabla")
-Object.defineProperty(dbTabla, "connect", {
-    configurable : true,
-    enumerable   : false,
-    value        : require("./lib/Connect")
-})
+const dbTabla = require("./lib/dbTabla")
+const Connect = require("./lib/Connect")
+const constants = require("./lib/const.js")
+const dbResult = require("./lib/dbResult")
+const dbRow = require("./lib/dbRow")
+const dbTablaError = require("./lib/dbTablaError")
+const procesingSql = require("./lib/procesingSql")
 
-let constants=require("./lib/const.js")
-for(let i in constants) 
-{
-    Object.defineProperty(dbTabla, i, {
-        configurable : true,
-        enumerable   : false,
-        value        : constants[i]
-    })
-}
+dbTabla.dbTabla = dbTabla
+dbTabla.Connect = Connect
+dbTabla.connect = Connect
+dbTabla.dbResult = dbResult
+dbTabla.dbRow = dbRow
+dbTabla.dbTablaError = dbTablaError
+dbTabla.procesingSql = procesingSql
 
-dbTabla.Connect = require("./lib/Connect")
-dbTabla.dbResult = require("./lib/dbResult")
-dbTabla.dbRow = require("./lib/dbRow")
-dbTabla.dbTablaError = require("./lib/dbTablaError")
-dbTabla.procesingSql = require("./lib/procesingSql")
+dbTabla.MYSQL_DB = constants.MYSQL_DB
+dbTabla.POSTGRESQL_DB = constants.POSTGRESQL_DB
+dbTabla.SQLITE3_DB = constants.SQLITE3_DB
+dbTabla.SQLSERVER_DB = constants.SQLSERVER_DB
 
-module.exports=dbTabla
+module.exports = dbTabla
+module.exports.dbTabla = dbTabla
+module.exports.Connect = Connect
+module.exports.connect = Connect
+module.exports.dbResult = dbResult
+module.exports.dbRow = dbRow
+module.exports.dbTablaError = dbTablaError
+module.exports.procesingSql = procesingSql
+module.exports.MYSQL_DB = constants.MYSQL_DB
+module.exports.POSTGRESQL_DB = constants.POSTGRESQL_DB
+module.exports.SQLITE3_DB = constants.SQLITE3_DB
+module.exports.SQLSERVER_DB = constants.SQLSERVER_DB

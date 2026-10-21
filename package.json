@@ -11,13 +11,14 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint  ./index.js ./lib",
-    "test": "node --test ./test/"
+    "test": "node --test ./test/index.js"
   },
   "keywords": [
     "sql",
     "mysql",
     "sqlite",
-    "posgresql"
+    "posgresql",
+    "postgresql"
   ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",

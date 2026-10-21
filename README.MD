@@ -70,20 +70,24 @@ Este método debe retornar una promesa que resuelva un objeto descriptivo con es
 ```js
 {
     tabla: String,
-    colums: [
+    columns: [ // Tambi?n soportado como 'colums' por retrocompatibilidad
         {
             name: String,
             type: String,
             defaultNull: Boolean,
             primary: Boolean,
             unique: Boolean,
-            defaul: String,
+            default: String, // Tambi?n soportado como 'defaul'
             autoincrement: Boolean
         },
         // ... otras columnas
     ]
 }
 ```
+
+> [!NOTE]
+> **Soporte ESM y CommonJS:**  
+> Tanto en CommonJS (`const { Connect, dbTabla } = require('dbtabla')`) como en proyectos ESM nativos (`import { Connect, dbTabla, dbResult } from 'dbtabla'`), todos los m?dulos y constantes est?n disponibles directamente como *named exports*.
 
 ---
 
@@ -138,21 +142,41 @@ miTabla.update({ rol: 'Senior' }, { id: 1, nombre: "Admin" });
 #### `dbTabla#delete(where)`
 Elimina registros coincidentes con la cláusula `where`.
 
-#### `dbTabla#select([campos], [joins], [where], ...)`
-Poderoso motor de búsqueda y selección que retorna objetos `dbRow`.
-* `campos {array|string}`: Lista de columnas a seleccionar.
-* `joins {object}`: Definición de uniones entre tablas. Utilice prefijos para especificar el tipo de unión:
+#### `dbTabla#select(options)` (Sintaxis de Objeto ?nico - Recomendada)
+La forma principal y m?s segura de realizar consultas en `dbtabla` es pasando un ?nico objeto con propiedades nombradas. Esto elimina cualquier ambig?edad en el orden de los par?metros posicionales:
+
+```javascript
+const usuarios = await miTabla.select({
+    where: { 
+        "estado": "activo", 
+        "puntos>": 100, 
+        "||nombre%": "Anti%" 
+    },
+    campos: ["id", "nombre", "email"],
+    joins: { ">perfiles": "perfiles.id_user = usuarios.id" }, // > = LEFT JOIN
+    order: "id DESC",
+    limit: 10
+});
+```
+Esta sintaxis est? soportada de forma nativa en `select`, `selectOne` y `busqueda`.
+
+**Propiedades del Objeto de Consulta:**
+* `where {object|string}`: Criterios de filtrado din?mico o cadena SQL.
+* `campos {array|string}`: Lista de columnas a seleccionar (por defecto `*`).
+* `joins {object}`: Definici?n de uniones entre tablas:
     * `>tabla`: LEFT JOIN
     * `<tabla`: RIGHT JOIN
     * `=tabla`: INNER JOIN
-    * `tabla` (sin prefijo): NATURAL JOIN / USING automático.
-* `where {string|object}`: Criterios de filtrado SQL.
-* `order / limit`: Criterios de ordenación y paginación.
+    * `tabla` (sin prefijo): NATURAL JOIN / USING autom?tico.
+* `order {string}`: Criterio de ordenaci?n (ej. `"id DESC"`).
+* `limit {number|string}`: L?mite de registros.
+* `group {string}`: Cl?usula GROUP BY.
+* `having {string|object}`: Cl?usula HAVING.
 
-#### Sintaxis Avanzada de Filtrado (Where Object)
-Cuando se utiliza un objeto para la cláusula `where`, se pueden emplear prefijos y sufijos especiales para construir consultas complejas:
+#### Sintaxis Avanzada de Filtrado (`where` Object)
+Cuando se utiliza un objeto para la cl?usula `where`, se pueden emplear prefijos y sufijos especiales:
 
-**1. Operadores de Comparación (Sufijos):**
+**1. Operadores de Comparaci?n (Sufijos):**
 *   `campo%`: Se traduce como `campo LIKE 'valor'`.
 *   `campo!`: Se traduce como `campo != 'valor'`.
 *   `campo>`: Se traduce como `campo > 'valor'`.
@@ -160,53 +184,24 @@ Cuando se utiliza un objeto para la cláusula `where`, se pueden emplear prefijo
 *   `campo>=`: Se traduce como `campo >= 'valor'`.
 *   `campo<=`: Se traduce como `campo <= 'valor'`.
 
-**2. Operadores Lógicos (Prefijos):**
-*   `||campo`: Cambia el operador lógico a `OR` (por defecto es `AND`).
+**2. Operadores L?gicos (Prefijos):**
+*   `||campo`: Cambia el operador l?gico a `OR` (por defecto es `AND`).
 *   `&&campo`: Asegura el uso de `AND` (comportamiento por defecto).
 
-**Ejemplo Combinado:**
-```javascript
-miTabla.select("*", { 
-    "estado": "activo", 
-    "||nombre%": "Anti%", 
-    "edad>": 18 
-});
-// Genera: WHERE estado = 'activo' OR nombre LIKE 'Anti%' AND edad > 18
-```
+<details>
+<summary><b>Sintaxis Posicional Alternativa (Legacy)</b></summary>
 
-> [!IMPORTANT]
-> **Uso de Parámetros Polimórficos:**
-> Los métodos `select` y `busqueda` detectan el tipo de datos para ajustar los parámetros automáticamente. Si pasas un **objeto** en las primeras posiciones, la librería podría interpretarlo como una definición de **Joins** en lugar de filtros **Where**.
-> 
-> Para usar un objeto de filtrado `where` de forma segura sin definir campos ni joins, utiliza `null`:
+Tambi?n es posible usar par?metros posicionales: `select([campos], [joins], [where], [group], [having], [order], [limit])`.
+
+> [!WARNING]
+> **Cuidado al usar objetos en modo posicional:**
+> Si pasas un objeto como primer argumento, la librer?a lo interpretar? como una definici?n de **Joins**. Para usar un objeto `where` en modo posicional sin definir campos ni joins, debes pasar `null` expl?citamente:
 > ```javascript
-> // Correcto: (campos, joins, where)
+> // Posicional: (campos, joins, where)
 > await tabla.select(null, null, { "usuario": "admin" });
 > ```
-
-### Sintaxis de Objeto Único (Recomendada)
-Para evitar confusiones con el orden de los parámetros y el polimorfismo, puedes pasar un único objeto con propiedades nombradas:
-
-```javascript
-await miTabla.select({
-    where: { "estado": "activo", "puntos>": 100 },
-    campos: ["id", "nombre"],
-    order: "id DESC",
-    limit: 5
-});
-```
-Esta sintaxis está soportada en `select`, `selectOne` y `busqueda`.
-
----
-
-```js
-// Búsquedas complejas con Joins dinámicos
-miTabla.select(
-    ["id", "nombre"],
-    { ">perfiles": "perfiles.id_user=usuarios.id" }, // Left Join
-    { "estado": "activo" }
-).then(rows => console.log(rows));
-```
+> *(Por esta raz?n se recomienda usar siempre la Sintaxis de Objeto ?nico descrita arriba)*.
+</details>
 
 ---
 
