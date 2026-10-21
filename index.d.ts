@@ -374,9 +374,13 @@ export abstract class Connect {
     pathModels(pathModel: string): void;
 
     /**
-     * Obtiene una instancia interactiva de dbTabla tipada
+     * Obtiene una instancia interactiva de dbTabla tipada con soporte para métodos de negocio inyectados
      */
-    tabla<T = Record<string, any>>(tabla: string, callback?: (t: dbTabla<T>, error?: any) => void, verify?: boolean): dbTabla<T>;
+    tabla<T = Record<string, any>, TMethods = Record<string, any>>(
+        tabla: string,
+        callback?: (t: dbTabla<T> & TMethods, error?: any) => void,
+        verify?: boolean
+    ): dbTabla<T> & TMethods;
 
     abstract query(sql: string, params?: any[]): Promise<any>;
     _keysInTable(table: string): Promise<{ tabla: string; colums?: any[]; columns?: any[] }>;
