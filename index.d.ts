@@ -1,36 +1,247 @@
 /**
  * Declaraciones de tipos TypeScript para dbtabla
+ * Abstracción ORM ligera con Active Record para SQL
  */
 
-export interface SelectOptions {
-    /** Criterios de filtrado SQL o mediante objeto con operadores (ej: { "estado": "activo", "puntos>": 10 }) */
-    where?: Record<string, any> | string;
-    /** Lista de columnas a seleccionar (por defecto '*') */
-    campos?: string[] | string;
-    /** Alias de 'campos' */
-    columns?: string[] | string;
-    /** Definición de uniones (ej: { '>perfil': 'perfiles.id_user=usuarios.id' }) */
-    joins?: Record<string, string>;
-    /** Cláusula ORDER BY (ej: 'id DESC') */
-    order?: string;
-    /** Límite de registros (ej: 10) */
-    limit?: number | string;
-    /** Cláusula GROUP BY */
-    group?: string;
-    /** Cláusula HAVING */
-    having?: string | Record<string, any>;
-    /** Campos para el método busqueda */
-    campo_bus?: string[];
-    /** Término a buscar en el método busqueda */
+/**
+ * Operadores de comparación soportados al final del nombre del campo en objetos `where`:
+ * - `=` : Igualdad explícita (comportamiento por defecto al omitir operador)
+ * - `!` o `!=` : Distinto de (para `null`, genera automáticamente `IS NOT NULL`)
+ * - `>` : Mayor que
+ * - `<` : Menor que
+ * - `>=` : Mayor o igual que
+ * - `<=` : Menor o igual que
+ * - `%` : Búsqueda `LIKE` (ej: `'nombre%': '%Juan%'`)
+ */
+export type WhereComparisonOperator = '=' | '!' | '!=' | '>' | '<' | '>=' | '<=' | '%';
+
+/**
+ * Prefijos de concatenación lógica entre condiciones en objetos `where`:
+ * - `||` : Concatena la condición actual con la anterior mediante `OR`
+ * - `&&` : Concatena la condición actual con la anterior mediante `AND` (comportamiento por defecto)
+ */
+export type WhereLogicPrefix = '||' | '&&' | '';
+
+/**
+ * Valores escalares primitivos válidos para condiciones SQL
+ */
+export type WherePrimitive = string | number | boolean | Date | null | undefined;
+
+/**
+ * Valor aceptado en una condición del objeto `where`:
+ * - Escalar: `col = val` (o con el operador indicado).
+ *   Si el valor es `null`, `=` se transforma en `IS NULL` y `!` / `!=` en `IS NOT NULL`.
+ * - Arreglo: Se evalúa como condiciones agrupadas con `OR`:
+ *   `{ id: [1, 2, 3] }` => `(id = 1 OR id = 2 OR id = 3)`
+ *   `{ 'nombre%': ['%Ana%', '%Juan%'] }` => `(nombre LIKE '%Ana%' OR nombre LIKE '%Juan%')`
+ */
+export type WhereValue = WherePrimitive | WherePrimitive[];
+
+/**
+ * Nombre de campo con operador sufijo y prefijo lógico opcional.
+ * Proporciona autocompletado para propiedades del tipo `T` manteniendo compatibilidad
+ * con cualquier expresión o columna calificada (ej: `'usuarios.id'`, `'DATE(fecha)>'`).
+ */
+export type WhereKey<T = Record<string, any>> =
+    | (keyof T & string)
+    | `${WhereLogicPrefix}${keyof T & string}`
+    | `${WhereLogicPrefix}${keyof T & string}${WhereComparisonOperator}`
+    | `${string}`;
+
+/**
+ * Objeto de condiciones estructuradas `where`.
+ * 
+ * Permite sintaxis concisa y segura sin necesidad de concatenar strings SQL manualmente.
+ * 
+ * @example
+ * ```ts
+ * const where: WhereObject<Usuario> = {
+ *   estado: 'activo',
+ *   'edad>=': 18,
+ *   'puntos<': 100,
+ *   'nombre%': '%Carlos%',
+ *   'rol': ['admin', 'editor'], // (rol = 'admin' OR rol = 'editor')
+ *   '||categoria': 'vip',        // OR categoria = 'vip'
+ *   'eliminado_en!': null        // eliminado_en IS NOT NULL
+ * };
+ * ```
+ */
+export type WhereObject<T = Record<string, any>> = {
+    [K in WhereKey<T>]?: WhereValue;
+} & {
+    [key: string]: WhereValue | any;
+};
+
+/**
+ * Cláusula `where` para consultas o modificaciones:
+ * puede ser un objeto estructurado (`WhereObject<T>`) o una sentencia SQL pura (`string`).
+ */
+export type WhereClause<T = Record<string, any>> = WhereObject<T> | string;
+
+/**
+ * Columna o expresión de selección SQL.
+ * Sugiere las propiedades del modelo `T` y permite alias o funciones de agregación SQL (`COUNT(*)`, `AS alias`).
+ */
+export type ColumnItem<T = Record<string, any>> = (keyof T & string) | (string & {});
+
+/**
+ * Especificación de columnas a consultar.
+ * - Array de nombres de columnas: `['id', 'nombre', 'email']` o `['u.id', 'COUNT(*) as total']`
+ * - String con lista de columnas separadas por comas o comodín: `'*'`, `'id, nombre, email'`, `'usuarios.*'`
+ */
+export type ColumnList<T = Record<string, any>> = ColumnItem<T>[] | string;
+
+/**
+ * Prefijos de unión de tablas soportados por dbtabla:
+ * - `>` : `LEFT JOIN`
+ * - `<` : `RIGHT JOIN`
+ * - `=` : `INNER JOIN`
+ * - (sin prefijo) : `NATURAL JOIN`
+ */
+export type JoinPrefix = '>' | '<' | '=' | '';
+
+/**
+ * Identificador de tabla en uniones con prefijo opcional (ej: `'>perfiles'`, `'=roles'`, `'<empresas'`)
+ */
+export type JoinTableKey = `>${string}` | `<${string}` | `=${string}` | string;
+
+/**
+ * Condición de unión (JOIN):
+ * - String con operador de comparación (`=`, `!=`, `<`, `>`, `<=`, `>=`): Cláusula `ON(expresión)`
+ *   Ej: `'perfiles.id_user = usuarios.id'`
+ * - String simple (nombre de columna): Cláusula `USING(columna)`
+ *   Ej: `'id_usuario'`
+ * - Array de nombres de columnas: Cláusula `USING(col1, col2, ...)`
+ *   Ej: `['id_usuario', 'tenant_id']`
+ * - Objeto estructurado: Cláusula `ON(condiciones...)` generada automáticamente
+ *   Ej: `{ 'perfiles.id_user': 'usuarios.id' }`
+ */
+export type JoinCondition = string | string[] | Record<string, any>;
+
+/**
+ * Mapa de uniones donde las claves son tablas (con prefijo opcional `>`, `<`, `=`)
+ * y los valores son las condiciones ON / USING.
+ * 
+ * @example
+ * ```ts
+ * const joins: JoinsObject = {
+ *   '>perfiles': 'perfiles.id_user = usuarios.id', // LEFT JOIN perfiles ON(perfiles.id_user = usuarios.id)
+ *   '=roles': 'id_rol',                            // INNER JOIN roles USING(id_rol)
+ *   '>permisos': ['id_user', 'id_rol']             // LEFT JOIN permisos USING(id_user, id_rol)
+ * };
+ * ```
+ */
+export type JoinsObject = {
+    [table: JoinTableKey]: JoinCondition;
+} & Record<string, JoinCondition>;
+
+/**
+ * Cláusula de uniones soportada en opciones o parámetros:
+ * Puede ser un mapa de uniones (`JoinsObject`), un array de tablas (`string[]`) o un string SQL.
+ */
+export type JoinsClause = JoinsObject | string[] | string;
+
+/**
+ * Opciones para consultas `select`, `selectOne` y `busqueda` (Sintaxis de Objeto Único).
+ */
+export interface SelectOptions<T = Record<string, any>> {
+    /**
+     * Criterios de filtrado SQL estructurados o en texto SQL plano.
+     * 
+     * Soporta operadores al final (`=`, `!`, `!=`, `>`, `<`, `>=`, `<=`, `%`),
+     * prefijos lógicos (`||`, `&&`), arreglos para comparaciones múltiples agrupadas en OR,
+     * y conversión automática de `null` a `IS NULL` / `IS NOT NULL`.
+     * 
+     * @example
+     * ```ts
+     * { where: { "estado": "activo", "puntos>=": 10 } }
+     * { where: { "nombre%": "%Juan%", "||nombre%": "%Pedro%" } }
+     * { where: { "id": [1, 2, 3] } } // (id = 1 OR id = 2 OR id = 3)
+     * { where: "puntos > 10 AND activo = 1" }
+     * ```
+     */
+    where?: WhereClause<T>;
+
+    /**
+     * Lista de columnas a seleccionar.
+     * Por defecto `['tabla.*']` (o `'*'`).
+     * 
+     * @example
+     * ```ts
+     * { campos: ['id', 'nombre', 'email'] }
+     * { campos: 'id, nombre, email' }
+     * { campos: ['u.id', 'COUNT(*) as total'] }
+     * ```
+     */
+    campos?: ColumnList<T>;
+
+    /**
+     * Alias de `campos` (recomendado si prefieres nomenclatura en inglés).
+     */
+    columns?: ColumnList<T>;
+
+    /**
+     * Alias de `columns` (soportado por retrocompatibilidad histórica).
+     */
+    colums?: ColumnList<T>;
+
+    /**
+     * Definición de uniones (JOINs).
+     * 
+     * Prefijos:
+     * - `>` : LEFT JOIN
+     * - `<` : RIGHT JOIN
+     * - `=` : INNER JOIN
+     * - sin prefijo : NATURAL JOIN
+     * 
+     * @example
+     * ```ts
+     * { joins: { '>perfiles': 'perfiles.id_user = usuarios.id', '=roles': 'id_rol' } }
+     * ```
+     */
+    joins?: JoinsClause;
+
+    /**
+     * Cláusula ORDER BY.
+     * Puede ser un string SQL (`"id DESC"`, `"nombre ASC, id DESC"`) o un array de columnas (`['nombre ASC', 'id DESC']`).
+     */
+    order?: string | (keyof T & string)[] | string[];
+
+    /**
+     * Límite de registros y paginación.
+     * Puede ser un número (`10`), string (`"10"`, `"10 OFFSET 20"`), o tupla `[offset, limit]` (`[20, 10]`).
+     */
+    limit?: number | string | [number, number];
+
+    /**
+     * Cláusula GROUP BY.
+     * Puede ser un string SQL (`"categoria"`, `"pais, ciudad"`) o un array de columnas.
+     */
+    group?: string | (keyof T & string)[] | string[];
+
+    /**
+     * Cláusula HAVING.
+     * Puede ser un objeto estructurado (`WhereObject`) o un string SQL (`"COUNT(*) > 5"`).
+     */
+    having?: WhereClause<any>;
+
+    /**
+     * Lista de columnas donde se ejecutará la búsqueda en el método `busqueda`.
+     */
+    campo_bus?: ColumnList<T>;
+
+    /**
+     * Texto o término a buscar en el método `busqueda`.
+     */
     cadena?: string;
 }
 
 /**
- * Representa una fila de base de datos con capacidades Active Record
+ * Representa una fila individual obtenida de la base de datos con capacidades Active Record
  */
-export class dbRow {
+export class dbRow<T = Record<string, any>> {
     [key: string]: any;
-    /** Sentencia SQL ejecutada */
+    /** Sentencia SQL exacta ejecutada para obtener o modificar este registro */
     $sql?: string;
     /** Actualiza los cambios realizados sobre este objeto en la base de datos física */
     update(): Promise<any>;
@@ -39,9 +250,15 @@ export class dbRow {
 }
 
 /**
+ * Fila de datos combinada con las propiedades tipadas del modelo T y los métodos Active Record
+ */
+export type DbRowRecord<T = Record<string, any>> = dbRow<T> & T;
+
+/**
  * Colección de filas devuelta por consultas de selección
  */
-export class dbResult extends Array<dbRow> {
+export class dbResult<T = Record<string, any>> extends Array<DbRowRecord<T>> {
+    /** Sentencia SQL ejecutada */
     $sql?: string;
 }
 
@@ -52,7 +269,7 @@ export class dbTablaError extends Error {
 /**
  * Representación e interfaz de interacción con una tabla SQL
  */
-export class dbTabla {
+export class dbTabla<T = Record<string, any>> {
     readonly lastSql: string;
     tabla: string;
     typeDB: string;
@@ -65,61 +282,77 @@ export class dbTabla {
     /**
      * Inserta registros en la tabla
      */
-    insert(data: Record<string, any> | any[]): Promise<any>;
+    insert(data: Partial<T> | Partial<T>[] | Record<string, any> | Record<string, any>[]): Promise<any>;
     insert(...values: any[]): Promise<any>;
 
     /**
      * Actualiza registros coincidentes
      */
-    update(sets: Record<string, any>, where?: string | Record<string, any>): Promise<any>;
-    updateById(sets: Record<string, any>, id: string | number): Promise<any>;
+    update(sets: Partial<T> | Record<string, any>, where: WhereClause<T>): Promise<any>;
+    updateById(sets: Partial<T> | Record<string, any>, id: string | number): Promise<any>;
 
     /**
      * Elimina registros coincidentes
      */
-    delete(where?: string | Record<string, any>): Promise<any>;
+    delete(where: WhereClause<T>): Promise<any>;
     deleteById(id: string | number): Promise<any>;
+    deleteById(sets: any, id: string | number): Promise<any>;
 
     /**
-     * Consulta registros (Sintaxis de Objeto Único recomendada)
+     * Consulta registros utilizando Sintaxis de Objeto Único (Recomendada)
      */
-    select(options?: SelectOptions): Promise<dbResult>;
+    select(options?: SelectOptions<T>): Promise<dbResult<T>>;
     /**
-     * Consulta registros (Sintaxis posicional alternativa)
+     * Consulta registros utilizando sintaxis posicional clásica
      */
     select(
-        campos?: string[] | string | null,
-        joins?: Record<string, string> | null,
-        where?: string | Record<string, any>,
-        group?: string,
-        having?: string,
-        order?: string,
-        limit?: number | string
-    ): Promise<dbResult>;
+        campos?: ColumnList<T> | null,
+        joins?: JoinsClause | null,
+        where?: WhereClause<T> | null,
+        group?: string | string[],
+        having?: WhereClause<any> | null,
+        order?: string | string[],
+        limit?: number | string | [number, number]
+    ): Promise<dbResult<T>>;
 
     /**
-     * Obtiene el primer registro coincidente
+     * Obtiene el primer registro coincidente utilizando Sintaxis de Objeto Único (Recomendada)
      */
-    selectOne(options?: SelectOptions): Promise<dbRow | null>;
+    selectOne(options?: SelectOptions<T>): Promise<DbRowRecord<T> | null>;
+    /**
+     * Obtiene el primer registro coincidente utilizando sintaxis posicional clásica
+     */
     selectOne(
-        campos?: string[] | string | null,
-        joins?: Record<string, string> | null,
-        where?: string | Record<string, any>,
+        campos?: ColumnList<T> | null,
+        joins?: JoinsClause | null,
+        where?: WhereClause<T> | null,
+        group?: string | string[],
+        having?: WhereClause<any> | null,
+        order?: string | string[]
+    ): Promise<DbRowRecord<T> | null>;
+
+    /**
+     * Busca un registro por su clave primaria
+     */
+    selectById(id: string | number): Promise<DbRowRecord<T> | null>;
+    selectById(campos: ColumnList<T> | null, id: string | number): Promise<DbRowRecord<T> | null>;
+    selectById(campos: ColumnList<T> | null, joins: JoinsClause | null, id: string | number): Promise<DbRowRecord<T> | null>;
+
+    /**
+     * Búsqueda de texto (LIKE) en múltiples campos con algoritmo de ponderación
+     */
+    busqueda(options: SelectOptions<T>): Promise<dbResult<T>>;
+    busqueda(
+        cadena: string,
+        campo_bus?: ColumnList<T>,
+        campos?: ColumnList<T>,
+        where?: WhereClause<T>,
+        joins?: JoinsClause,
         group?: string,
         having?: string,
         order?: string,
         limit?: number | string
-    ): Promise<dbRow | null>;
-
-    /**
-     * Busca un registro por clave primaria
-     */
-    selectById(id: string | number): Promise<dbRow | null>;
-
-    /**
-     * Búsqueda de texto (LIKE) en múltiples campos
-     */
-    busqueda(cadena: string | SelectOptions, campo_bus?: string[]): Promise<dbResult>;
+    ): Promise<dbResult<T>>;
 
     [key: string]: any;
 }
@@ -130,8 +363,8 @@ export class dbTabla {
 export abstract class Connect {
     config: any;
     typeDB: string;
-    protected _cacheTablas: Record<string, dbTabla>;
-    protected _caheTablas: Record<string, dbTabla>;
+    protected _cacheTablas: Record<string, dbTabla<any>>;
+    protected _caheTablas: Record<string, dbTabla<any>>;
 
     constructor(params?: any, typeDB?: string);
 
@@ -141,9 +374,9 @@ export abstract class Connect {
     pathModels(pathModel: string): void;
 
     /**
-     * Obtiene una instancia interactiva de dbTabla
+     * Obtiene una instancia interactiva de dbTabla tipada
      */
-    tabla(tabla: string, callback?: (t: dbTabla, error?: any) => void, verify?: boolean): dbTabla;
+    tabla<T = Record<string, any>>(tabla: string, callback?: (t: dbTabla<T>, error?: any) => void, verify?: boolean): dbTabla<T>;
 
     abstract query(sql: string, params?: any[]): Promise<any>;
     _keysInTable(table: string): Promise<{ tabla: string; colums?: any[]; columns?: any[] }>;
@@ -161,7 +394,7 @@ export const SQLITE3_DB: string;
 export const SQLSERVER_DB: string;
 
 export interface dbTablaStatic {
-    new (options: { tabla: string; connection: Connect; callback?: Function; config?: any }, verify?: boolean): dbTabla;
+    new <T = Record<string, any>>(options: { tabla: string; connection: Connect; callback?: Function; config?: any }, verify?: boolean): dbTabla<T>;
     dbTabla: typeof dbTabla;
     Connect: typeof Connect;
     connect: typeof Connect;
