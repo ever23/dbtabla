@@ -9,6 +9,7 @@
     "url": "git+https://github.com/ever23/dbtabla.git"
   },
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "lint": "eslint  ./index.js ./lib",
     "test": "node --test ./test/index.js"
