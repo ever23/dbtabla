@@ -5,5 +5,6 @@ describe("test de dbTabla",()=>
     require("./Connect")
     require("./dbRow")
     require("./joins")
+    require("./paginate")
 
 })
