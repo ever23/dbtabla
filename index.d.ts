@@ -366,6 +366,22 @@ export class dbTabla<T = Record<string, any>> {
 /**
  * Clase base para la conexión a la base de datos
  */
+/**
+ * Objeto emitido en el evento 'query' para observabilidad y registro de consultas
+ */
+export interface QueryEvent {
+    /** Sentencia SQL ejecutada */
+    sql: string;
+    /** Duración de la consulta en milisegundos */
+    timeMs: number;
+    /** Error si la consulta falló, o null si finalizó con éxito */
+    error: any | null;
+    /** Indica si la consulta se ejecutó dentro de una transacción */
+    isTransaction: boolean;
+    /** Timestamp de la consulta */
+    timestamp: number;
+}
+
 export abstract class Connect {
     config: any;
     typeDB: string;
@@ -389,6 +405,19 @@ export abstract class Connect {
     ): dbTabla<T> & TMethods;
 
     abstract query(sql: string, params?: any[]): Promise<any>;
+
+    /**
+     * Se suscribe al evento de ejecución de consultas
+     */
+    on(event: 'query', listener: (e: QueryEvent) => void): this;
+    on(event: string | symbol, listener: (...args: any[]) => void): this;
+    once(event: 'query', listener: (e: QueryEvent) => void): this;
+    once(event: string | symbol, listener: (...args: any[]) => void): this;
+
+    /**
+     * Atajo para alertar o loggear cuando una consulta supera el umbral de tiempo especificado en milisegundos.
+     */
+    onSlowQuery(thresholdMs: number, callback: (e: QueryEvent) => void): this;
 
     /**
      * Ejecuta una serie de operaciones en una transacción aislada.

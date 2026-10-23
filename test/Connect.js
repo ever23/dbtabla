@@ -251,4 +251,83 @@ describe("Test de la clase Connect",()=>
             })
         })
     })
+
+    describe("Observabilidad y Logger de Consultas (db.on('query') / Slow Query Logger)", () => {
+        class MockLoggerConnect extends connect {
+            constructor() {
+                super({}, "mysql")
+            }
+            async query(sql) {
+                return this._executeWithTiming(sql, async () => {
+                    if (sql.includes("ERROR_PROVOCADO")) {
+                        throw new Error("Fallo de sintaxis SQL simulado")
+                    }
+                    if (sql.includes("DEMORA")) {
+                        await new Promise(r => setTimeout(r, 25))
+                    }
+                    return [{ id: 1 }]
+                })
+            }
+        }
+
+        it("emite el evento 'query' con sql, timeMs, error=null e isTransaction=false en consultas normales", async () => {
+            const db = new MockLoggerConnect()
+            const eventos = []
+            db.on('query', (e) => eventos.push(e))
+
+            await db.query("SELECT * FROM usuarios WHERE activo = 1")
+
+            assert.equal(eventos.length, 1)
+            assert.equal(eventos[0].sql, "SELECT * FROM usuarios WHERE activo = 1")
+            assert.ok(typeof eventos[0].timeMs === "number" && eventos[0].timeMs >= 0)
+            assert.equal(eventos[0].error, null)
+            assert.equal(eventos[0].isTransaction, false)
+            assert.ok(eventos[0].timestamp > 0)
+        })
+
+        it("emite el evento 'query' con el objeto de error cuando una consulta falla", async () => {
+            const db = new MockLoggerConnect()
+            const eventos = []
+            db.on('query', (e) => eventos.push(e))
+
+            await assert.rejects(async () => {
+                await db.query("SELECT * FROM ERROR_PROVOCADO")
+            }, /Fallo de sintaxis SQL simulado/)
+
+            assert.equal(eventos.length, 1)
+            assert.equal(eventos[0].sql, "SELECT * FROM ERROR_PROVOCADO")
+            assert.ok(eventos[0].error)
+            assert.equal(eventos[0].error.message, "Fallo de sintaxis SQL simulado")
+            assert.ok(typeof eventos[0].timeMs === "number")
+        })
+
+        it("marca isTransaction=true en consultas ejecutadas dentro de db.transaction()", async () => {
+            const db = new MockLoggerConnect()
+            const eventos = []
+            db.on('query', (e) => eventos.push(e))
+
+            await db.transaction(async (tx) => {
+                await tx.query("INSERT INTO pagos VALUES (1, 100)")
+            })
+
+            assert.ok(eventos.length >= 3) // START TRANSACTION, INSERT, COMMIT
+            const insertEvent = eventos.find(e => e.sql.includes("INSERT INTO pagos"))
+            assert.ok(insertEvent)
+            assert.equal(insertEvent.isTransaction, true)
+            assert.equal(insertEvent.error, null)
+        })
+
+        it("onSlowQuery alerta únicamente cuando la consulta excede el umbral en milisegundos", async () => {
+            const db = new MockLoggerConnect()
+            const slowQueries = []
+            db.onSlowQuery(15, (e) => slowQueries.push(e))
+
+            await db.query("SELECT * FROM rapida")
+            await db.query("SELECT * FROM DEMORA")
+
+            assert.equal(slowQueries.length, 1)
+            assert.equal(slowQueries[0].sql, "SELECT * FROM DEMORA")
+            assert.ok(slowQueries[0].timeMs >= 15)
+        })
+    })
 })
