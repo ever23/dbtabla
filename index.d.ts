@@ -384,6 +384,7 @@ export abstract class Connect {
 
     abstract query(sql: string, params?: any[]): Promise<any>;
     _keysInTable(table: string): Promise<{ tabla: string; colums?: any[]; columns?: any[] }>;
+    _syncModelColumns(table: string, keys: any): Promise<any>;
     inModel(tabla: string, create?: boolean): Promise<any>;
 }
 

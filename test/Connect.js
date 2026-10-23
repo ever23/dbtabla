@@ -45,4 +45,71 @@ describe("Test de la clase Connect",()=>
 
 
     })
+    it("_syncModelColumns detecta columnas faltantes y ejecuta ALTER TABLE", async () => {
+        let queriesExecuted = []
+        class MockConnect extends connect {
+            constructor() {
+                super({}, "MYSQL_DB")
+            }
+            async query(sql) {
+                queriesExecuted.push(sql)
+                return []
+            }
+        }
+
+        let db = new MockConnect()
+        let m = new model("usuarios", [
+            { name: "id", type: "int", primary: true },
+            { name: "nombre", type: "varchar", len: 100 },
+            { name: "edad", type: "int" }
+        ])
+        db.addModel(m)
+
+        let initialKeys = {
+            tabla: "usuarios",
+            columns: [
+                { name: "id", type: "int", primary: true },
+                { name: "nombre", type: "varchar", len: 100 }
+            ]
+        }
+
+        let updatedKeys = await db._syncModelColumns("usuarios", initialKeys)
+        assert.equal(queriesExecuted.length, 1)
+        assert.ok(queriesExecuted[0].includes("ALTER TABLE"))
+        assert.ok(queriesExecuted[0].includes("ADD COLUMN"))
+        assert.ok(queriesExecuted[0].includes("edad"))
+        assert.equal(updatedKeys.columns.length, 3)
+        assert.equal(updatedKeys.columns[2].name, "edad")
+    })
+    it("_syncModelColumns no ejecuta nada si autoMigrate es false", async () => {
+        let queriesExecuted = []
+        class MockConnect extends connect {
+            constructor() {
+                super({ autoMigrate: false }, "MYSQL_DB")
+            }
+            async query(sql) {
+                queriesExecuted.push(sql)
+                return []
+            }
+        }
+
+        let db = new MockConnect()
+        let m = new model("usuarios", [
+            { name: "id", type: "int", primary: true },
+            { name: "nombre", type: "varchar", len: 100 },
+            { name: "edad", type: "int" }
+        ])
+        db.addModel(m)
+
+        let initialKeys = {
+            tabla: "usuarios",
+            columns: [
+                { name: "id", type: "int", primary: true }
+            ]
+        }
+
+        let updatedKeys = await db._syncModelColumns("usuarios", initialKeys)
+        assert.equal(queriesExecuted.length, 0)
+        assert.equal(updatedKeys.columns.length, 1)
+    })
 })
