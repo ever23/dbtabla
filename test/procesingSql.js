@@ -110,5 +110,23 @@ describe("Test de la clase prosessingSql",()=>{
 
     })
 
+    it("select omite WHERE cuando se pasa objeto vacio o cadena vacia", () => {
+        let tabla = new procesingSql(...config)
+        assert.equal(tabla.select(undefined, undefined, {}), "SELECT `unatabla`.* FROM `unatabla`;")
+        assert.equal(tabla.select(undefined, undefined, ""), "SELECT `unatabla`.* FROM `unatabla`;")
+        assert.equal(tabla.select(undefined, undefined, "   "), "SELECT `unatabla`.* FROM `unatabla`;")
+    })
 
+    it("delete lanza error si where esta vacio o no es valido", () => {
+        let tabla = new procesingSql(...config)
+        assert.throws(() => tabla.delete({}), /DELETE requiere una cláusula WHERE válida/)
+        assert.throws(() => tabla.delete(""), /DELETE requiere una cláusula WHERE válida/)
+        assert.throws(() => tabla.delete("   "), /DELETE requiere una cláusula WHERE válida/)
+    })
+
+    it("update lanza error si where esta vacio o no es valido", () => {
+        let tabla = new procesingSql(...config)
+        assert.throws(() => tabla.update({ row2: "x" }, {}), /UPDATE requiere una cláusula WHERE válida/)
+        assert.throws(() => tabla.update({ row2: "x" }, ""), /UPDATE requiere una cláusula WHERE válida/)
+    })
 })
