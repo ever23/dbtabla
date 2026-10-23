@@ -389,6 +389,14 @@ export abstract class Connect {
     ): dbTabla<T> & TMethods;
 
     abstract query(sql: string, params?: any[]): Promise<any>;
+
+    /**
+     * Ejecuta una serie de operaciones en una transacción aislada.
+     * Realiza COMMIT automáticamente al terminar el bloque o ROLLBACK si se produce un error.
+     * Soporta transacciones anidadas automáticas mediante SAVEPOINT.
+     */
+    transaction<TResult = any>(callback: (tx: this) => Promise<TResult>): Promise<TResult>;
+
     _keysInTable(table: string): Promise<{ tabla: string; colums?: any[]; columns?: any[] }>;
     _syncModelColumns(table: string, keys: any): Promise<any>;
     inModel(tabla: string, create?: boolean): Promise<any>;

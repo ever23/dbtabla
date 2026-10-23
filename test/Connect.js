@@ -112,4 +112,143 @@ describe("Test de la clase Connect",()=>
         assert.equal(queriesExecuted.length, 0)
         assert.equal(updatedKeys.columns.length, 1)
     })
+
+    describe("db.transaction() y contexto transaccional aislado", () => {
+        class MockPoolConnect extends connect {
+            constructor() {
+                super({}, "mysql")
+                this.poolConnections = [{ id: "conn_1" }, { id: "conn_2" }]
+                this.activeConnections = []
+                this.releasedConnections = []
+                this.queriesExecuted = []
+            }
+            async _acquireDedicatedConnection() {
+                const conn = this.poolConnections.shift() || { id: "conn_extra" }
+                this.activeConnections.push(conn)
+                return conn
+            }
+            async _releaseDedicatedConnection(conn) {
+                this.releasedConnections.push(conn)
+                this.activeConnections = this.activeConnections.filter(c => c !== conn)
+            }
+            _queryOnConnection(conn, sql) {
+                this.queriesExecuted.push({ connId: conn.id, sql })
+                return Promise.resolve({ ok: true })
+            }
+        }
+
+        it("ejecuta commit automático y libera la conexión tras finalizar con éxito", async () => {
+            const db = new MockPoolConnect()
+            const result = await db.transaction(async (tx) => {
+                await tx.query("INSERT INTO usuarios VALUES (1, 'Juan')")
+                return { status: "ok", code: 200 }
+            })
+
+            assert.deepEqual(result, { status: "ok", code: 200 })
+            assert.equal(db.queriesExecuted.length, 3)
+            assert.equal(db.queriesExecuted[0].sql, "START TRANSACTION")
+            assert.equal(db.queriesExecuted[1].sql, "INSERT INTO usuarios VALUES (1, 'Juan')")
+            assert.equal(db.queriesExecuted[2].sql, "COMMIT")
+            assert.equal(db.releasedConnections.length, 1)
+            assert.equal(db.releasedConnections[0].id, "conn_1")
+            assert.equal(db.activeConnections.length, 0)
+        })
+
+        it("ejecuta rollback automático y libera la conexión si ocurre un error", async () => {
+            const db = new MockPoolConnect()
+            let errorCaught = null
+
+            try {
+                await db.transaction(async (tx) => {
+                    await tx.query("INSERT INTO usuarios VALUES (2, 'Maria')")
+                    throw new Error("Fallo de validación de negocio")
+                })
+            } catch (err) {
+                errorCaught = err
+            }
+
+            assert.ok(errorCaught)
+            assert.equal(errorCaught.message, "Fallo de validación de negocio")
+            assert.equal(db.queriesExecuted.length, 3)
+            assert.equal(db.queriesExecuted[0].sql, "START TRANSACTION")
+            assert.equal(db.queriesExecuted[1].sql, "INSERT INTO usuarios VALUES (2, 'Maria')")
+            assert.equal(db.queriesExecuted[2].sql, "ROLLBACK")
+            assert.equal(db.releasedConnections.length, 1)
+            assert.equal(db.releasedConnections[0].id, "conn_1")
+            assert.equal(db.activeConnections.length, 0)
+        })
+
+        it("soporta transacciones anidadas con SAVEPOINT y RELEASE SAVEPOINT", async () => {
+            const db = new MockPoolConnect()
+            await db.transaction(async (tx) => {
+                await tx.query("UPDATE cuenta SET saldo = saldo - 100")
+
+                await tx.transaction(async (nestedTx) => {
+                    await nestedTx.query("INSERT INTO auditoria VALUES ('cargo realizado')")
+                })
+
+                await tx.query("UPDATE destino SET saldo = saldo + 100")
+            })
+
+            const sqlList = db.queriesExecuted.map(q => q.sql)
+            assert.deepEqual(sqlList, [
+                "START TRANSACTION",
+                "UPDATE cuenta SET saldo = saldo - 100",
+                "SAVEPOINT sp_1",
+                "INSERT INTO auditoria VALUES ('cargo realizado')",
+                "RELEASE SAVEPOINT sp_1",
+                "UPDATE destino SET saldo = saldo + 100",
+                "COMMIT"
+            ])
+            // Toda la transacción anidada debe haberse ejecutado con la misma conexión conn_1
+            assert.ok(db.queriesExecuted.every(q => q.connId === "conn_1"))
+            assert.equal(db.releasedConnections.length, 1)
+        })
+
+        it("revierte a SAVEPOINT en caso de fallo dentro de transacción anidada y continúa la externa", async () => {
+            const db = new MockPoolConnect()
+            await db.transaction(async (tx) => {
+                await tx.query("INSERT INTO paso1 VALUES (1)")
+
+                try {
+                    await tx.transaction(async (nestedTx) => {
+                        await nestedTx.query("INSERT INTO paso2_opcional VALUES (2)")
+                        throw new Error("Error opcional ignorado")
+                    })
+                } catch (e) {
+                    // Manejo del error opcional
+                }
+
+                await tx.query("INSERT INTO paso3_final VALUES (3)")
+            })
+
+            const sqlList = db.queriesExecuted.map(q => q.sql)
+            assert.deepEqual(sqlList, [
+                "START TRANSACTION",
+                "INSERT INTO paso1 VALUES (1)",
+                "SAVEPOINT sp_1",
+                "INSERT INTO paso2_opcional VALUES (2)",
+                "ROLLBACK TO SAVEPOINT sp_1",
+                "INSERT INTO paso3_final VALUES (3)",
+                "COMMIT"
+            ])
+        })
+
+        it("lanza error informativo si se intenta llamar a tx.commit() o tx.rollback() manualmente", async () => {
+            const db = new MockPoolConnect()
+            await db.transaction(async (tx) => {
+                await assert.rejects(async () => {
+                    await tx.commit()
+                }, /No debe llamar a tx\.commit\(\)/)
+
+                await assert.rejects(async () => {
+                    await tx.rollback()
+                }, /No debe llamar a tx\.rollback\(\)/)
+
+                await assert.rejects(async () => {
+                    await tx.beginTransaction()
+                }, /No debe llamar a tx\.beginTransaction\(\)/)
+            })
+        })
+    })
 })
