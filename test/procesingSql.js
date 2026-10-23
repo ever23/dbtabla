@@ -129,4 +129,21 @@ describe("Test de la clase prosessingSql",()=>{
         assert.throws(() => tabla.update({ row2: "x" }, {}), /UPDATE requiere una cláusula WHERE válida/)
         assert.throws(() => tabla.update({ row2: "x" }, ""), /UPDATE requiere una cláusula WHERE válida/)
     })
+
+    it("insertAll genera una sola sentencia con múltiples tuplas VALUES (...), (...)", () => {
+        let tabla = new procesingSql(...config)
+        const sql = tabla.insertAll([
+            { row1: 1, row2: "Juan" },
+            { row1: 2, row2: "Pedro" },
+            { row1: 3, row2: "Maria" }
+        ])
+        assert.equal(sql, "INSERT INTO `unatabla` (`row1`,`row2`) VALUES (1,'Juan'),(2,'Pedro'),(3,'Maria');")
+    })
+
+    it("insertAll valida que el array no este vacio y que contenga objetos planos", () => {
+        let tabla = new procesingSql(...config)
+        assert.throws(() => tabla.insertAll([]), /insertAll requiere un arreglo con al menos un elemento/)
+        assert.throws(() => tabla.insertAll(null), /insertAll requiere un arreglo con al menos un elemento/)
+        assert.throws(() => tabla.insertAll(["string"]), /insertAll: el elemento en el índice 0 debe ser un objeto plano/)
+    })
 })

@@ -286,6 +286,12 @@ export class dbTabla<T = Record<string, any>> {
     insert(...values: any[]): Promise<any>;
 
     /**
+     * Inserta múltiples filas en una única sentencia SQL de alto rendimiento (Bulk Insert)
+     * @param filas Arreglo de objetos a insertar
+     */
+    insertAll(filas: (Partial<T> | Record<string, any>)[]): Promise<any>;
+
+    /**
      * Actualiza registros coincidentes
      */
     update(sets: Partial<T> | Record<string, any>, where: WhereClause<T>): Promise<any>;
