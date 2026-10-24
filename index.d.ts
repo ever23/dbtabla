@@ -269,6 +269,54 @@ export class dbTablaError extends Error {
 /**
  * Representación e interfaz de interacción con una tabla SQL
  */
+/**
+ * Opciones para paginación con tabla.paginate() o tabla.busquedaPaginate()
+ */
+export interface PaginateOptions<T = any> extends SelectOptions<T> {
+    /** Número de página actual (base 1). Por defecto: 1 */
+    page?: number;
+    /** Cantidad de registros por página. Por defecto: 15 */
+    limit?: number;
+    /** Cursor para paginación Keyset (equivalente a after) */
+    cursor?: any;
+    /** Cursor para paginación Keyset (después de este valor) */
+    after?: any;
+    /** Nombre del campo cursor para paginación Keyset. Por defecto: clave primaria o 'id' */
+    cursorField?: string;
+    /** Texto a buscar para búsqueda inteligente ponderada */
+    cadena?: string;
+    /** Alias de cadena */
+    search?: string;
+    /** Alias de cadena */
+    busqueda?: string;
+    /** Columnas en las que se buscará. Por defecto: columnas del modelo */
+    campo_bus?: string[];
+}
+
+/**
+ * Resultado estructurado devuelto por tabla.paginate() y tabla.busquedaPaginate()
+ */
+export interface PaginateResult<T = any> {
+    /** Registros obtenidos de la página actual */
+    data: dbResult<T>;
+    /** Total de registros coincidentes */
+    total?: number;
+    /** Número de página actual (base 1) */
+    page?: number;
+    /** Cantidad máxima de registros solicitados por página */
+    limit: number;
+    /** Total de páginas calculadas */
+    totalPages?: number;
+    /** Indica si existe una página posterior */
+    hasNext?: boolean;
+    /** Indica si existe una página anterior */
+    hasPrev?: boolean;
+    /** Indica si existen más registros tras el cursor actual (en paginación keyset) */
+    hasMore?: boolean;
+    /** Cursor del último registro para solicitar la siguiente tanda (en paginación keyset) */
+    nextCursor?: any;
+}
+
 export class dbTabla<T = Record<string, any>> {
     readonly lastSql: string;
     tabla: string;
@@ -359,6 +407,28 @@ export class dbTabla<T = Record<string, any>> {
         order?: string,
         limit?: number | string
     ): Promise<dbResult<T>>;
+
+    /**
+     * Pagina registros de la tabla soportando todos los atributos de select() y búsqueda ponderada
+     */
+    paginate(options?: PaginateOptions<T>): Promise<PaginateResult<T>>;
+
+    /**
+     * Búsqueda inteligente con paginación integrada
+     */
+    busquedaPaginate(options: PaginateOptions<T>): Promise<PaginateResult<T>>;
+    busquedaPaginate(
+        cadena: string,
+        campo_bus?: ColumnList<T>,
+        options?: PaginateOptions<T>
+    ): Promise<PaginateResult<T>>;
+
+    busquedaPaginada(options: PaginateOptions<T>): Promise<PaginateResult<T>>;
+    busquedaPaginada(
+        cadena: string,
+        campo_bus?: ColumnList<T>,
+        options?: PaginateOptions<T>
+    ): Promise<PaginateResult<T>>;
 
     [key: string]: any;
 }

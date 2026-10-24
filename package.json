@@ -1,6 +1,6 @@
 {
   "name": "dbtabla",
-  "version": "2.3.0-beta.0",
+  "version": "2.3.0-beta.1",
   "description": "interface de alto nivel para sql",
   "license": "MIT",
   "author": "enyerverfranco@gmail.com",
@@ -27,7 +27,7 @@
     "globals": "^17.4.0"
   },
   "dependencies": {
-    "tabla-model": "^2.1.0-beta.0"
+    "tabla-model": "^2.1.0-beta.1"
   },
   "engines": {
     "node": ">=18.0.0"

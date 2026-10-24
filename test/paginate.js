@@ -91,7 +91,8 @@ describe("Test del método tabla.paginate()", () => {
             limit: 10
         });
 
-        const countQuery = db.queries.find(q => /COUNT\(\*\) as total/i.test(q));
+        const countQuery = db.queries.find(q => /SELECT COUNT\(\*\) as total FROM/i.test(q));
+        assert.ok(countQuery, "debe encontrar la consulta de conteo");
         assert.ok(countQuery.includes("FROM (SELECT 1 FROM usuarios WHERE activo=1 GROUP BY carrera HAVING COUNT(*)>5) as _subquery"));
     });
 
@@ -142,5 +143,55 @@ describe("Test del método tabla.paginate()", () => {
 
         const dataQuery = db.queries.find(q => /id<50/i.test(q));
         assert.ok(dataQuery, "debe usar operador < para orden descendente");
+    });
+
+    it("paginación con búsqueda inteligente (paginate({ cadena })) genera conteo subquery y query ponderada", async () => {
+        const db = new MockPaginateConnect();
+        db.mockRows = [
+            { id: 1, nombre: "Laptop Lenovo", puntaje_busqueda: 5 },
+            { id: 2, nombre: "Laptop Dell", puntaje_busqueda: 2 }
+        ];
+        const tabla = db.tabla("usuarios");
+
+        const res = await tabla.paginate({
+            cadena: "Laptop",
+            campo_bus: ["nombre"],
+            page: 1,
+            limit: 10
+        });
+
+        assert.equal(res.total, 25);
+        assert.equal(res.page, 1);
+        assert.equal(res.limit, 10);
+        assert.equal(res.data.length, 2);
+
+        const countQuery = db.queries.find(q => /SELECT COUNT\(\*\) as total FROM/i.test(q));
+        const dataQuery = db.queries.find(q => /puntaje_busqueda/i.test(q) && /LIMIT 0,10/i.test(q));
+
+        assert.ok(countQuery, "debe generar consulta de conteo para búsqueda");
+        assert.ok(countQuery.includes("_subquery"), "el conteo debe usar subquery con las condiciones de puntaje");
+        assert.ok(dataQuery, "debe generar consulta de datos ponderada");
+        assert.ok(dataQuery.includes("puntaje_busqueda DESC"), "debe ordenar por relevancia puntaje_busqueda DESC");
+    });
+
+    it("busquedaPaginate y busquedaPaginada delegan a paginate con opciones de búsqueda", async () => {
+        const db = new MockPaginateConnect();
+        db.mockRows = [{ id: 1, nombre: "Item Buscado" }];
+        const tabla = db.tabla("usuarios");
+
+        // Sintaxis posicional
+        const resPos = await tabla.busquedaPaginate("Laptop", ["nombre"], { page: 2, limit: 5 });
+        assert.equal(resPos.page, 2);
+        assert.equal(resPos.limit, 5);
+
+        // Sintaxis objeto
+        const resObj = await tabla.busquedaPaginada({
+            cadena: "Laptop",
+            campo_bus: ["nombre"],
+            page: 3,
+            limit: 4
+        });
+        assert.equal(resObj.page, 3);
+        assert.equal(resObj.limit, 4);
     });
 });
