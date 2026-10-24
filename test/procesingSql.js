@@ -146,4 +146,12 @@ describe("Test de la clase prosessingSql",()=>{
         assert.throws(() => tabla.insertAll(null), /insertAll requiere un arreglo con al menos un elemento/)
         assert.throws(() => tabla.insertAll(["string"]), /insertAll: el elemento en el índice 0 debe ser un objeto plano/)
     })
+
+    it("whereId lanza error si la tabla no tiene claves primarias", () => {
+        let tablaSinPK = new procesingSql({
+            tabla: "sin_pk",
+            colums: [{ name: "dato", type: "text" }]
+        }, { escapeChar: "`" })
+        assert.throws(() => tablaSinPK.whereId(1), /no existen claves primarias/)
+    })
 })
