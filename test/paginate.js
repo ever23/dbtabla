@@ -145,7 +145,7 @@ describe("Test del método tabla.paginate()", () => {
         assert.ok(dataQuery, "debe usar operador < para orden descendente");
     });
 
-    it("paginación con búsqueda inteligente (paginate({ cadena })) genera conteo subquery y query ponderada", async () => {
+    it("búsqueda inteligente con paginación (busquedaPaginate) genera conteo subquery y query ponderada", async () => {
         const db = new MockPaginateConnect();
         db.mockRows = [
             { id: 1, nombre: "Laptop Lenovo", puntaje_busqueda: 5 },
@@ -153,7 +153,7 @@ describe("Test del método tabla.paginate()", () => {
         ];
         const tabla = db.tabla("usuarios");
 
-        const res = await tabla.paginate({
+        const res = await tabla.busquedaPaginate({
             cadena: "Laptop",
             campo_bus: ["nombre"],
             page: 1,
@@ -174,7 +174,7 @@ describe("Test del método tabla.paginate()", () => {
         assert.ok(dataQuery.includes("puntaje_busqueda DESC"), "debe ordenar por relevancia puntaje_busqueda DESC");
     });
 
-    it("busquedaPaginate y busquedaPaginada delegan a paginate con opciones de búsqueda", async () => {
+    it("busquedaPaginate y busquedaPaginada soportan sintaxis posicional y de objeto", async () => {
         const db = new MockPaginateConnect();
         db.mockRows = [{ id: 1, nombre: "Item Buscado" }];
         const tabla = db.tabla("usuarios");

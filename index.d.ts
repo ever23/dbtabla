@@ -270,7 +270,7 @@ export class dbTablaError extends Error {
  * Representación e interfaz de interacción con una tabla SQL
  */
 /**
- * Opciones para paginación con tabla.paginate() o tabla.busquedaPaginate()
+ * Opciones para paginación con tabla.paginate()
  */
 export interface PaginateOptions<T = any> extends SelectOptions<T> {
     /** Número de página actual (base 1). Por defecto: 1 */
@@ -283,6 +283,16 @@ export interface PaginateOptions<T = any> extends SelectOptions<T> {
     after?: any;
     /** Nombre del campo cursor para paginación Keyset. Por defecto: clave primaria o 'id' */
     cursorField?: string;
+}
+
+/**
+ * Opciones para búsqueda inteligente con paginación integrada tabla.busquedaPaginate() / tabla.busquedaPaginada()
+ */
+export interface BusquedaPaginateOptions<T = any> extends SelectOptions<T> {
+    /** Número de página actual (base 1). Por defecto: 1 */
+    page?: number;
+    /** Cantidad de registros por página. Por defecto: 15 */
+    limit?: number;
     /** Texto a buscar para búsqueda inteligente ponderada */
     cadena?: string;
     /** Alias de cadena */
@@ -290,7 +300,7 @@ export interface PaginateOptions<T = any> extends SelectOptions<T> {
     /** Alias de cadena */
     busqueda?: string;
     /** Columnas en las que se buscará. Por defecto: columnas del modelo */
-    campo_bus?: string[];
+    campo_bus?: ColumnList<T>;
 }
 
 /**
@@ -409,25 +419,25 @@ export class dbTabla<T = Record<string, any>> {
     ): Promise<dbResult<T>>;
 
     /**
-     * Pagina registros de la tabla soportando todos los atributos de select() y búsqueda ponderada
+     * Pagina registros de la tabla soportando todos los atributos de select()
      */
     paginate(options?: PaginateOptions<T>): Promise<PaginateResult<T>>;
 
     /**
      * Búsqueda inteligente con paginación integrada
      */
-    busquedaPaginate(options: PaginateOptions<T>): Promise<PaginateResult<T>>;
+    busquedaPaginate(options: BusquedaPaginateOptions<T>): Promise<PaginateResult<T>>;
     busquedaPaginate(
         cadena: string,
         campo_bus?: ColumnList<T>,
-        options?: PaginateOptions<T>
+        options?: BusquedaPaginateOptions<T>
     ): Promise<PaginateResult<T>>;
 
-    busquedaPaginada(options: PaginateOptions<T>): Promise<PaginateResult<T>>;
+    busquedaPaginada(options: BusquedaPaginateOptions<T>): Promise<PaginateResult<T>>;
     busquedaPaginada(
         cadena: string,
         campo_bus?: ColumnList<T>,
-        options?: PaginateOptions<T>
+        options?: BusquedaPaginateOptions<T>
     ): Promise<PaginateResult<T>>;
 
     [key: string]: any;
